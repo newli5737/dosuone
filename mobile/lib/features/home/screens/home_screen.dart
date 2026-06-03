@@ -466,11 +466,12 @@ class _HomeHeader extends StatelessWidget {
                       ),
                     ),
                     const Text(
-                      'Cửa hàng điện thoại',
+                      AppLogo.brandName,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ],

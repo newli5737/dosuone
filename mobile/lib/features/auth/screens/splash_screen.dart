@@ -59,7 +59,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 AppLogo(height: 120, borderRadius: BorderRadius.all(Radius.circular(24))),
-                SizedBox(height: 24),
+                SizedBox(height: 20),
+                Text(
+                  AppLogo.brandName,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+                SizedBox(height: 8),
                 Text(
                   'Cửa hàng điện thoại chính hãng',
                   style: TextStyle(color: Colors.white70, fontSize: 15),

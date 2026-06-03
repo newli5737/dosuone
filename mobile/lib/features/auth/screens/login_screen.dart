@@ -45,7 +45,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Center(
                 child: Column(
                   children: [
-                    const AppLogo(height: 72),
+                    const AppLogo(height: 72, showTitle: true),
                     const SizedBox(height: 16),
                     Text(
                       'Chào mừng trở lại',

@@ -94,7 +94,7 @@ class _BankPaymentCard extends StatelessWidget {
                 style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
             Text('Nội dung: ${jsonStr(bank, 'transfer_content', 'transferContent')}',
                 style: const TextStyle(fontWeight: FontWeight.w600)),
-            Text('Số tiền: ${formatVnd(Number(bank['amount'] ?? 0).toInt())}',
+            Text('Số tiền: ${formatVnd(((bank['amount'] as num?) ?? 0).toInt())}',
                 style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800)),
           ],
         ),

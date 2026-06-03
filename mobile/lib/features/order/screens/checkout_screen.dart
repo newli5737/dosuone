@@ -97,7 +97,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   void _showBankPaymentDialog(Map<String, dynamic> bank, Map<String, dynamic> order) {
     final qrUrl = jsonStr(bank, 'qr_url', 'qrUrl') ?? '';
-    final amount = Number(bank['amount'] ?? order['total'] ?? 0);
+    final amount = (bank['amount'] as num?) ?? (order['total'] as num?) ?? 0;
     showDialog(
       context: context,
       barrierDismissible: false,

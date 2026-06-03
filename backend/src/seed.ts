@@ -11,14 +11,18 @@ import { AppModule } from './app.module';
 import {
   Brand,
   Category,
+  Order,
+  OrderItem,
   Product,
   ProductImage,
   ProductSpec,
   User,
   UserRole,
 } from './entities';
+import { CustomersService } from './customers/customers.service';
 import { resolveAllMedia, type CloudinaryAsset } from './seed/cloudinary-media';
 import { BRANDS, CATEGORIES, LEGACY_CATEGORY_SLUGS, PRODUCTS } from './seed/definitions';
+import { seedOrdersData } from './seed/seed-orders';
 
 async function seed() {
   const forceMedia = process.argv.includes('--force-media');
@@ -32,6 +36,9 @@ async function seed() {
   const productsRepo = app.get<Repository<Product>>(getRepositoryToken(Product));
   const imagesRepo = app.get<Repository<ProductImage>>(getRepositoryToken(ProductImage));
   const specsRepo = app.get<Repository<ProductSpec>>(getRepositoryToken(ProductSpec));
+  const ordersRepo = app.get<Repository<Order>>(getRepositoryToken(Order));
+  const orderItemsRepo = app.get<Repository<OrderItem>>(getRepositoryToken(OrderItem));
+  const customersService = app.get(CustomersService);
 
   const img = (key: string): CloudinaryAsset => {
     const asset = media[key];
@@ -174,6 +181,14 @@ async function seed() {
       ),
     );
   }
+
+  await seedOrdersData({
+    usersRepo,
+    productsRepo,
+    ordersRepo,
+    orderItemsRepo,
+    customersService,
+  });
 
   console.log('\n✓ Seed xong (ảnh trên Cloudinary)');
   console.log('  Admin:    admin@dosuone.com / admin123');

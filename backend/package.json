@@ -9,6 +9,7 @@
     "start:prod": "node dist/main.js",
     "seed": "ts-node -r tsconfig-paths/register src/seed.ts",
     "seed:refresh": "ts-node -r tsconfig-paths/register src/seed.ts -- --force-media",
+    "seed:orders": "ts-node -r tsconfig-paths/register src/seed.ts",
     "db:create": "node scripts/create-db.js"
   },
   "dependencies": {
