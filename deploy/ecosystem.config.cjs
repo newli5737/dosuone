@@ -16,6 +16,7 @@ module.exports = {
       max_memory_restart: '400M',
       env: {
         NODE_ENV: 'production',
+        PORT: '3018',
       },
       error_file: '/home/dosuone/logs/api-error.log',
       out_file: '/home/dosuone/logs/api-out.log',

@@ -8,6 +8,11 @@ git checkout -- deploy/ 2>/dev/null || true
 git pull --ff-only
 
 if [ -f "$ROOT/backend/.env" ]; then
+  if grep -q '^PORT=' "$ROOT/backend/.env"; then
+    sed -i 's|^PORT=.*|PORT=3018|' "$ROOT/backend/.env"
+  else
+    echo 'PORT=3018' >> "$ROOT/backend/.env"
+  fi
   if grep -q '^CORS_ORIGINS=' "$ROOT/backend/.env"; then
     sed -i 's|^CORS_ORIGINS=.*|CORS_ORIGINS=https://one.dosutech.site|' "$ROOT/backend/.env"
   else
