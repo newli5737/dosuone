@@ -5,7 +5,8 @@ import StatCard from '../components/StatCard';
 import Modal from '../components/Modal';
 import Loading from '../components/Loading';
 import ImageUploader, { type UploadItem } from '../components/ImageUploader';
-import { field, formatVnd, unwrapData, unwrapList, unwrapPaginated } from '../utils/format';
+import axios from 'axios';
+import { field, formatVnd, parseNumberInput, unwrapData, unwrapList, unwrapPaginated } from '../utils/format';
 import { slugify } from '../utils/slug';
 
 type Filter = 'all' | 'active' | 'inactive' | 'featured' | 'low_stock' | 'on_sale';
@@ -18,7 +19,7 @@ const emptyProductForm = {
   price: '',
   sale_price: '',
   stock: '0',
-  brand: '',
+  brand_id: '',
   is_featured: false,
   is_active: true,
 };
@@ -26,10 +27,11 @@ const emptyProductForm = {
 export default function Products() {
   const [products, setProducts] = useState<Record<string, unknown>[]>([]);
   const [categories, setCategories] = useState<Record<string, unknown>[]>([]);
+  const [brandsList, setBrandsList] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
-  const [brand, setBrand] = useState('');
+  const [brandFilter, setBrandFilter] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyProductForm);
@@ -42,11 +44,13 @@ export default function Products() {
     Promise.all([
       api.get('/products', { params: { limit: 500, include_inactive: true } }),
       api.get('/categories', { params: { all: '1' } }),
+      api.get('/brands', { params: { all: '1' } }),
     ])
-      .then(([p, c]) => {
+      .then(([p, c, b]) => {
         const { data } = unwrapPaginated(p);
         setProducts(data);
         setCategories(unwrapList(c) as Record<string, unknown>[]);
+        setBrandsList(unwrapList(b) as Record<string, unknown>[]);
       })
       .finally(() => setLoading(false));
   };
@@ -59,15 +63,6 @@ export default function Products() {
     const cat = categories.find((c) => String(c.id) === id);
     return cat ? String(cat.name) : '—';
   };
-
-  const brands = useMemo(() => {
-    const set = new Set<string>();
-    for (const p of products) {
-      const b = String(p.brand ?? '').trim();
-      if (b) set.add(b);
-    }
-    return [...set].sort();
-  }, [products]);
 
   const stats = useMemo(() => {
     const active = products.filter((p) => Boolean(p.is_active ?? p.isActive ?? true)).length;
@@ -85,9 +80,10 @@ export default function Products() {
     return products.filter((p) => {
       const name = String(p.name ?? '').toLowerCase();
       const slug = String(p.slug ?? '').toLowerCase();
-      const b = String(p.brand ?? '').toLowerCase();
-      if (q && !name.includes(q) && !b.includes(q) && !slug.includes(q)) return false;
-      if (brand && String(p.brand ?? '') !== brand) return false;
+      const bName = String(p.brand ?? '').toLowerCase();
+      const bId = String(p.brand_id ?? p.brandId ?? '');
+      if (q && !name.includes(q) && !bName.includes(q) && !slug.includes(q)) return false;
+      if (brandFilter && bId !== brandFilter) return false;
       const active = Boolean(p.is_active ?? p.isActive ?? true);
       const featured = Boolean(p.is_featured ?? p.isFeatured);
       const stock = Number(p.stock ?? 0);
@@ -100,7 +96,7 @@ export default function Products() {
       if (filter === 'on_sale' && !onSale) return false;
       return true;
     });
-  }, [products, search, filter, brand]);
+  }, [products, search, filter, brandFilter]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -152,7 +148,7 @@ export default function Products() {
         price: String(data.price ?? ''),
         sale_price: field(data, 'sale_price', 'salePrice') != null ? String(field(data, 'sale_price', 'salePrice')) : '',
         stock: String(data.stock ?? 0),
-        brand: String(data.brand ?? ''),
+        brand_id: String(data.brand_id ?? data.brandId ?? ''),
         is_featured: Boolean(data.is_featured ?? data.isFeatured),
         is_active: Boolean(data.is_active ?? data.isActive ?? true),
       });
@@ -172,6 +168,25 @@ export default function Products() {
       setError('Tải ít nhất 1 ảnh sản phẩm');
       return;
     }
+    const price = parseNumberInput(form.price);
+    if (!Number.isFinite(price) || price < 0) {
+      setError('Giá gốc không hợp lệ');
+      return;
+    }
+    let salePrice: number | undefined;
+    if (form.sale_price !== '') {
+      salePrice = parseNumberInput(form.sale_price);
+      if (!Number.isFinite(salePrice) || salePrice < 0) {
+        setError('Giá sale không hợp lệ');
+        return;
+      }
+    }
+    const stock = parseNumberInput(form.stock);
+    if (!Number.isFinite(stock) || stock < 0 || !Number.isInteger(stock)) {
+      setError('Tồn kho phải là số nguyên ≥ 0');
+      return;
+    }
+
     setSaving(true);
     setError('');
     try {
@@ -180,9 +195,9 @@ export default function Products() {
         name: form.name.trim(),
         slug: form.slug.trim(),
         description: form.description.trim() || undefined,
-        price: Number(form.price),
-        stock: Number(form.stock) || 0,
-        brand: form.brand.trim() || undefined,
+        price,
+        stock,
+        brand_id: form.brand_id || undefined,
         is_featured: form.is_featured,
         thumbnail_url: gallery[0].url,
         thumbnail_public_id: gallery[0].public_id || undefined,
@@ -193,7 +208,7 @@ export default function Products() {
           is_primary: i === 0,
         })),
       };
-      if (form.sale_price !== '') body.sale_price = Number(form.sale_price);
+      if (salePrice !== undefined) body.sale_price = salePrice;
       if (editingId) {
         body.is_active = form.is_active;
         await api.patch(`/products/${editingId}`, body);
@@ -202,8 +217,11 @@ export default function Products() {
       }
       setModalOpen(false);
       load();
-    } catch {
-      setError('Lưu thất bại (slug trùng, thiếu danh mục hoặc dữ liệu sai)');
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e)
+        ? String(e.response?.data?.message ?? e.response?.data?.error ?? '')
+        : '';
+      setError(msg || 'Lưu thất bại (slug trùng, thiếu danh mục hoặc dữ liệu sai)');
     } finally {
       setSaving(false);
     }
@@ -248,10 +266,10 @@ export default function Products() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select className="select" value={brand} onChange={(e) => setBrand(e.target.value)}>
+        <select className="select" value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)}>
           <option value="">Thương hiệu</option>
-          {brands.map((b) => (
-            <option key={b} value={b}>{b}</option>
+          {brandsList.map((b) => (
+            <option key={String(b.id)} value={String(b.id)}>{String(b.name)}</option>
           ))}
         </select>
         <select className="select" value={filter} onChange={(e) => setFilter(e.target.value as Filter)}>
@@ -343,7 +361,10 @@ export default function Products() {
         onClose={() => setModalOpen(false)}
         wide
       >
-        <div className="form-grid">
+        <div className="form-sections">
+          <section className="form-section">
+            <h3 className="form-section-title">Thông tin cơ bản</h3>
+            <div className="form-grid">
           <label>
             Danh mục *
             <select
@@ -359,12 +380,16 @@ export default function Products() {
           </label>
           <label>
             Thương hiệu
-            <input
-              className="input input-block"
-              value={form.brand}
-              onChange={(e) => setForm({ ...form, brand: e.target.value })}
-              placeholder="Apple, Samsung..."
-            />
+            <select
+              className="select input-block"
+              value={form.brand_id}
+              onChange={(e) => setForm({ ...form, brand_id: e.target.value })}
+            >
+              <option value="">— Chọn —</option>
+              {brandsList.map((b) => (
+                <option key={String(b.id)} value={String(b.id)}>{String(b.name)}</option>
+              ))}
+            </select>
           </label>
           <label className="form-span-2">
             Tên sản phẩm *
@@ -392,8 +417,9 @@ export default function Products() {
           <label>
             Giá gốc (VND) *
             <input
-              type="number"
-              className="input input-block"
+              type="text"
+              inputMode="decimal"
+              className="input input-block input-numeric"
               value={form.price}
               onChange={(e) => setForm({ ...form, price: e.target.value })}
             />
@@ -401,8 +427,9 @@ export default function Products() {
           <label>
             Giá sale (để trống nếu không)
             <input
-              type="number"
-              className="input input-block"
+              type="text"
+              inputMode="decimal"
+              className="input input-block input-numeric"
               value={form.sale_price}
               onChange={(e) => setForm({ ...form, sale_price: e.target.value })}
             />
@@ -410,36 +437,21 @@ export default function Products() {
           <label>
             Tồn kho
             <input
-              type="number"
-              className="input input-block"
+              type="text"
+              inputMode="numeric"
+              className="input input-block input-numeric"
               value={form.stock}
-              onChange={(e) => setForm({ ...form, stock: e.target.value })}
+              onChange={(e) => setForm({ ...form, stock: e.target.value.replace(/\D/g, '') })}
+              placeholder="0"
             />
           </label>
-          <div className="form-span-2">
-            <ImageUploader
-              label="Ảnh sản phẩm (Cloudinary) — ảnh đầu là ảnh bìa"
-              multiple
-              value={gallery}
-              onChange={setGallery}
-            />
-          </div>
-          <label className="form-span-2">
-            Mô tả
-            <textarea
-              className="input input-block textarea"
-              rows={4}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
-          </label>
-          <label className="checkbox-row">
+          <label className="checkbox-row form-span-2">
             <input
               type="checkbox"
               checked={form.is_featured}
               onChange={(e) => setForm({ ...form, is_featured: e.target.checked })}
             />
-            Sản phẩm nổi bật
+            Hiển thị mục nổi bật
           </label>
           {editingId && (
             <label className="checkbox-row">
@@ -448,9 +460,34 @@ export default function Products() {
                 checked={form.is_active}
                 onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
               />
-              Đang bán trên app
+              Đang bán
             </label>
           )}
+            </div>
+          </section>
+
+          <section className="form-section">
+            <h3 className="form-section-title">Mô tả sản phẩm</h3>
+            <p className="form-section-hint">Nội dung hiển thị trên trang chi tiết sản phẩm (app khách).</p>
+            <textarea
+              className="input input-block textarea"
+              rows={5}
+              placeholder="Thông số, ưu đãi, cam kết bảo hành..."
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+          </section>
+
+          <section className="form-section">
+            <h3 className="form-section-title">Hình ảnh</h3>
+            <p className="form-section-hint">Tải một hoặc nhiều ảnh. Ảnh đầu tiên là ảnh đại diện trên app.</p>
+            <ImageUploader
+              label=""
+              multiple
+              value={gallery}
+              onChange={setGallery}
+            />
+          </section>
         </div>
         {error && <p className="form-error">{error}</p>}
         <button type="button" className="btn btn-primary input-block" style={{ marginTop: 12 }} disabled={saving} onClick={save}>

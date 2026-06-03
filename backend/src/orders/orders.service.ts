@@ -19,6 +19,7 @@ import {
   User,
 } from '../entities';
 import { BankAccountsService } from '../bank-accounts/bank-accounts.service';
+import { CustomersService } from '../customers/customers.service';
 import { calcShippingFee, generateOrderCode } from '../common/utils/order-code.util';
 import { paginate, paginationMeta } from '../common/utils/pagination.util';
 import { CreateOrderDto } from './dto/order.dto';
@@ -34,6 +35,7 @@ export class OrdersService {
     @InjectRepository(Product) private productsRepo: Repository<Product>,
     @InjectRepository(Notification) private notifRepo: Repository<Notification>,
     private bankAccountsService: BankAccountsService,
+    private customersService: CustomersService,
   ) {}
 
   async create(userId: string, dto: CreateOrderDto) {
@@ -113,6 +115,8 @@ export class OrdersService {
         type: NotificationType.ORDER_UPDATE,
         data: { order_id: savedOrder.id },
       });
+
+      await this.customersService.recordFromOrder(userId, shippingAddress, total);
 
       const fullOrder = await manager.findOne(Order, {
         where: { id: savedOrder.id },

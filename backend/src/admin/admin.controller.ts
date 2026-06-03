@@ -61,8 +61,21 @@ export class AdminController {
   }
 
   @Get('users')
-  listUsers(@Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.service.listUsers(page, limit);
+  listUsers(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('role') role?: string,
+  ) {
+    return this.service.listUsers(page, limit, role);
+  }
+
+  @Get('customers')
+  listCustomers(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+  ) {
+    return this.service.listCustomers(page, limit, search);
   }
 
   @Patch('users/:id/status')

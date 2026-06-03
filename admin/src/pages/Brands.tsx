@@ -3,8 +3,7 @@ import api from '../api';
 import PageHeader from '../components/PageHeader';
 import Modal from '../components/Modal';
 import Loading from '../components/Loading';
-import ImageUploader, { type UploadItem } from '../components/ImageUploader';
-import { field, unwrapList } from '../utils/format';
+import { unwrapList } from '../utils/format';
 import { slugify } from '../utils/slug';
 
 const emptyForm = {
@@ -13,7 +12,7 @@ const emptyForm = {
   is_active: true,
 };
 
-export default function Categories() {
+export default function Brands() {
   const [list, setList] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -22,13 +21,11 @@ export default function Categories() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [gallery, setGallery] = useState<UploadItem[]>([]);
-  const [prevImagePublicId, setPrevImagePublicId] = useState('');
 
   const load = () => {
     setLoading(true);
     api
-      .get('/categories', { params: { all: '1' } })
+      .get('/brands', { params: { all: '1' } })
       .then((r) => setList(unwrapList(r) as Record<string, unknown>[]))
       .finally(() => setLoading(false));
   };
@@ -37,35 +34,29 @@ export default function Categories() {
     load();
   }, []);
 
-  const filtered = list.filter((c) => {
+  const filtered = list.filter((b) => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
     return (
-      String(c.name ?? '').toLowerCase().includes(q) ||
-      String(c.slug ?? '').toLowerCase().includes(q)
+      String(b.name ?? '').toLowerCase().includes(q) ||
+      String(b.slug ?? '').toLowerCase().includes(q)
     );
   });
 
   const openCreate = () => {
     setEditingId(null);
     setForm(emptyForm);
-    setGallery([]);
-    setPrevImagePublicId('');
     setError('');
     setModalOpen(true);
   };
 
   const openEdit = (row: Record<string, unknown>) => {
     setEditingId(String(row.id));
-    const url = String(field(row, 'image_url', 'imageUrl') ?? '');
-    const pid = String(field(row, 'image_public_id', 'imagePublicId') ?? '');
     setForm({
       name: String(row.name ?? ''),
       slug: String(row.slug ?? ''),
       is_active: Boolean(row.is_active ?? row.isActive ?? true),
     });
-    setGallery(url ? [{ url, public_id: pid, localKey: pid || url }] : []);
-    setPrevImagePublicId(pid);
     setError('');
     setModalOpen(true);
   };
@@ -78,21 +69,15 @@ export default function Categories() {
     setSaving(true);
     setError('');
     try {
-      const img = gallery[0];
-      const body: Record<string, unknown> = {
+      const body = {
         name: form.name.trim(),
         slug: form.slug.trim(),
-        image_url: img?.url,
-        image_public_id: img?.public_id || undefined,
         ...(editingId ? { is_active: form.is_active } : {}),
       };
-      if (editingId && prevImagePublicId && img?.public_id !== prevImagePublicId) {
-        body.delete_image_public_id = prevImagePublicId;
-      }
       if (editingId) {
-        await api.patch(`/categories/${editingId}`, body);
+        await api.patch(`/brands/${editingId}`, body);
       } else {
-        await api.post('/categories', body);
+        await api.post('/brands', body);
       }
       setModalOpen(false);
       load();
@@ -104,12 +89,12 @@ export default function Categories() {
   };
 
   const remove = async (id: string, name: string) => {
-    if (!confirm(`Xóa danh mục "${name}"? Sản phẩm liên quan có thể lỗi.`)) return;
+    if (!confirm(`Xóa thương hiệu "${name}"?`)) return;
     try {
-      await api.delete(`/categories/${id}`);
+      await api.delete(`/brands/${id}`);
       load();
     } catch {
-      alert('Không xóa được (còn sản phẩm gắn danh mục?)');
+      alert('Không xóa được (còn sản phẩm gắn thương hiệu?)');
     }
   };
 
@@ -118,11 +103,11 @@ export default function Categories() {
   return (
     <div>
       <PageHeader
-        title="Quản lý danh mục"
-        subtitle={`${filtered.length} danh mục`}
+        title="Quản lý thương hiệu"
+        subtitle={`${filtered.length} thương hiệu`}
         action={
           <button type="button" className="btn btn-primary" onClick={openCreate}>
-            + Thêm danh mục
+            + Thêm thương hiệu
           </button>
         }
       />
@@ -143,43 +128,34 @@ export default function Categories() {
         <table>
           <thead>
             <tr>
-              <th>Danh mục</th>
+              <th>Tên</th>
               <th>Slug</th>
-              <th>Ảnh</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((c) => {
-              const id = String(c.id);
-              const active = Boolean(c.is_active ?? c.isActive ?? true);
-              const img = field<string>(c, 'image_url', 'imageUrl');
+            {filtered.map((b) => {
+              const id = String(b.id);
+              const active = Boolean(b.is_active ?? b.isActive ?? true);
               return (
                 <tr key={id}>
-                  <td><strong>{String(c.name)}</strong></td>
-                  <td className="mono text-muted">{String(c.slug)}</td>
-                  <td>
-                    {img ? (
-                      <img src={img} alt="" className="product-thumb" />
-                    ) : (
-                      <span className="text-muted">—</span>
-                    )}
-                  </td>
+                  <td className="cell-title">{String(b.name)}</td>
+                  <td className="mono text-muted">{String(b.slug)}</td>
                   <td>
                     <span className={active ? 'badge badge-success' : 'badge badge-danger'}>
-                      {active ? 'Hiện' : 'Ẩn'}
+                      {active ? 'Hiển thị' : 'Ẩn'}
                     </span>
                   </td>
                   <td>
                     <div className="btn-group">
-                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => openEdit(c)}>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => openEdit(b)}>
                         Sửa
                       </button>
                       <button
                         type="button"
                         className="btn btn-danger btn-sm"
-                        onClick={() => remove(id, String(c.name))}
+                        onClick={() => remove(id, String(b.name))}
                       >
                         Xóa
                       </button>
@@ -190,17 +166,17 @@ export default function Categories() {
             })}
           </tbody>
         </table>
-        {filtered.length === 0 && <div className="empty-state">Chưa có danh mục</div>}
+        {filtered.length === 0 && <div className="empty-state">Chưa có thương hiệu</div>}
       </div>
 
       <Modal
         open={modalOpen}
-        title={editingId ? 'Sửa danh mục' : 'Thêm danh mục'}
+        title={editingId ? 'Sửa thương hiệu' : 'Thêm thương hiệu'}
         onClose={() => setModalOpen(false)}
       >
         <div className="form-stack">
           <label>
-            Tên danh mục
+            Tên thương hiệu
             <input
               className="input input-block"
               value={form.name}
@@ -222,10 +198,6 @@ export default function Categories() {
               onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })}
             />
           </label>
-          <section className="form-section">
-            <h3 className="form-section-title">Hình ảnh danh mục</h3>
-            <ImageUploader label="" value={gallery} onChange={setGallery} />
-          </section>
           {editingId && (
             <label className="checkbox-row">
               <input
@@ -238,7 +210,7 @@ export default function Categories() {
           )}
           {error && <p className="form-error">{error}</p>}
           <button type="button" className="btn btn-primary input-block" disabled={saving} onClick={save}>
-            {saving ? 'Đang lưu...' : 'Lưu danh mục'}
+            {saving ? 'Đang lưu...' : 'Lưu thương hiệu'}
           </button>
         </div>
       </Modal>

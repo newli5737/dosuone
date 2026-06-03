@@ -1,3 +1,14 @@
+/** Đọc số từ ô input (hỗ trợ 1.234,56 hoặc 1234.56) */
+export function parseNumberInput(value: string): number {
+  const raw = value.trim().replace(/\s/g, '');
+  if (!raw) return NaN;
+  const normalized = raw.includes(',') && !raw.includes('.')
+    ? raw.replace(/\./g, '').replace(',', '.')
+    : raw.replace(/,/g, '');
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : NaN;
+}
+
 export function formatVnd(n: number) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 }

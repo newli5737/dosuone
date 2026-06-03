@@ -559,6 +559,31 @@ button {
   gap: 6px;
 }
 
+.form-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.form-section {
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.form-section:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.form-section-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.form-section-hint {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+}
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -570,6 +595,15 @@ button {
 .textarea {
   resize: vertical;
   min-height: 88px;
+}
+.input-numeric::-webkit-outer-spin-button,
+.input-numeric::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input.input-numeric[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 .form-preview-img {
   max-height: 120px;
@@ -591,6 +625,15 @@ button {
   gap: 12px;
   margin-bottom: 12px;
   flex-wrap: wrap;
+}
+.uploader-head--actions-only {
+  justify-content: flex-start;
+}
+.uploader-empty {
+  margin: 0;
+  font-size: 13px;
+  text-align: center;
+  padding: 8px 0 4px;
 }
 .uploader-label {
   font-weight: 700;

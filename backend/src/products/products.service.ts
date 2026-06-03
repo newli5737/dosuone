@@ -16,16 +16,28 @@ export class ProductsService {
     private cloudinary: CloudinaryService,
   ) {}
 
+  private mapProduct(p: Product) {
+    const { brand: brandRel, ...rest } = p;
+    return {
+      ...rest,
+      brand: brandRel?.name ?? null,
+      brand_id: p.brandId,
+    };
+  }
+
   async findAll(query: ProductQueryDto) {
     const { skip, take, page, limit } = paginate(query.page, query.limit);
-    const qb = this.productsRepo.createQueryBuilder('p');
+    const qb = this.productsRepo
+      .createQueryBuilder('p')
+      .leftJoinAndSelect('p.brand', 'brand');
     if (!query.include_inactive) {
       qb.where('p.is_active = true');
     }
 
     if (query.category_id) qb.andWhere('p.category_id = :cid', { cid: query.category_id });
+    if (query.brand_id) qb.andWhere('p.brand_id = :bid', { bid: query.brand_id });
     if (query.search) {
-      qb.andWhere('(p.name ILIKE :s OR p.brand ILIKE :s)', { s: `%${query.search}%` });
+      qb.andWhere('(p.name ILIKE :s OR brand.name ILIKE :s)', { s: `%${query.search}%` });
     }
     if (query.min_price) qb.andWhere('COALESCE(p.sale_price, p.price) >= :min', { min: query.min_price });
     if (query.max_price) qb.andWhere('COALESCE(p.sale_price, p.price) <= :max', { max: query.max_price });
@@ -44,39 +56,41 @@ export class ProductsService {
         qb.orderBy('p.created_at', 'DESC');
     }
 
-    const [data, total] = await qb.skip(skip).take(take).getManyAndCount();
-    return { data, meta: paginationMeta(page, limit, total) };
+    const [rows, total] = await qb.skip(skip).take(take).getManyAndCount();
+    return { data: rows.map((p) => this.mapProduct(p)), meta: paginationMeta(page, limit, total) };
   }
 
-  findFeatured() {
-    return this.productsRepo.find({
+  async findFeatured() {
+    const rows = await this.productsRepo.find({
       where: { isFeatured: true, isActive: true },
+      relations: { brand: true },
       order: { createdAt: 'DESC' },
       take: 20,
     });
+    return rows.map((p) => this.mapProduct(p));
   }
 
   async findBySlug(slug: string) {
     const product = await this.productsRepo.findOne({
       where: { slug, isActive: true },
-      relations: { category: true, images: true, specs: true },
+      relations: { category: true, brand: true, images: true, specs: true },
       order: {
         images: { sortOrder: 'ASC' },
         specs: { sortOrder: 'ASC' },
       } as never,
     });
     if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
-    return product;
+    return this.mapProduct(product);
   }
 
   async findByIdAdmin(id: string) {
     const product = await this.productsRepo.findOne({
       where: { id },
-      relations: { images: true, category: true },
+      relations: { images: true, category: true, brand: true },
       order: { images: { sortOrder: 'ASC' } } as never,
     });
     if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
-    return product;
+    return this.mapProduct(product);
   }
 
   async getReviews(productId: string, page = 1, limit = 20) {
@@ -123,7 +137,7 @@ export class ProductsService {
         price: dto.price,
         salePrice: dto.sale_price,
         stock: dto.stock ?? 0,
-        brand: dto.brand,
+        brandId: dto.brand_id ?? null,
         thumbnailUrl: thumb.url,
         thumbnailPublicId: thumb.publicId,
         isFeatured: dto.is_featured ?? false,
@@ -223,7 +237,7 @@ export class ProductsService {
       ...(dto.price !== undefined && { price: dto.price }),
       ...(dto.sale_price !== undefined && { salePrice: dto.sale_price }),
       ...(dto.stock !== undefined && { stock: dto.stock }),
-      ...(dto.brand !== undefined && { brand: dto.brand }),
+      ...(dto.brand_id !== undefined && { brandId: dto.brand_id || null }),
       ...(dto.is_featured !== undefined && { isFeatured: dto.is_featured }),
       ...(dto.is_active !== undefined && { isActive: dto.is_active }),
     });

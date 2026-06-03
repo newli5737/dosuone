@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { Between, LessThan, Repository } from 'typeorm';
-import { Order, OrderStatus, Product, User } from '../entities';
+import { Customer, Order, OrderStatus, Product, User, UserRole } from '../entities';
 import { paginate, paginationMeta } from '../common/utils/pagination.util';
 
 @Injectable()
@@ -11,6 +11,7 @@ export class AdminService {
     @InjectRepository(Order) private ordersRepo: Repository<Order>,
     @InjectRepository(Product) private productsRepo: Repository<Product>,
     @InjectRepository(User) private usersRepo: Repository<User>,
+    @InjectRepository(Customer) private customersRepo: Repository<Customer>,
   ) {}
 
   async overview() {
@@ -84,6 +85,7 @@ export class AdminService {
   async lowStock(limit = 10) {
     const items = await this.productsRepo.find({
       where: { isActive: true, stock: LessThan(10) },
+      relations: { brand: true },
       order: { stock: 'ASC' },
       take: limit,
     });
@@ -91,7 +93,7 @@ export class AdminService {
       id: p.id,
       name: p.name,
       slug: p.slug,
-      brand: p.brand,
+      brand: p.brand?.name ?? null,
       stock: p.stock,
       thumbnail_url: p.thumbnailUrl,
       price: Number(p.price),
@@ -132,9 +134,16 @@ export class AdminService {
       .getRawMany();
   }
 
-  async listUsers(page = 1, limit = 20) {
+  async listUsers(page = 1, limit = 20, role?: string) {
     const { skip, take, page: p, limit: l } = paginate(page, limit);
+    const where =
+      role === 'admin'
+        ? { role: UserRole.ADMIN }
+        : role === 'customer'
+          ? { role: UserRole.CUSTOMER }
+          : {};
     const [data, total] = await this.usersRepo.findAndCount({
+      where,
       order: { createdAt: 'DESC' },
       skip,
       take,
@@ -143,6 +152,20 @@ export class AdminService {
       data: data.map(({ password, refreshToken, ...u }) => u),
       meta: paginationMeta(p, l, total),
     };
+  }
+
+  async listCustomers(page = 1, limit = 20, search?: string) {
+    const { skip, take, page: p, limit: l } = paginate(page, limit);
+    const qb = this.customersRepo.createQueryBuilder('c').orderBy('c.last_order_at', 'DESC', 'NULLS LAST');
+    if (search?.trim()) {
+      const s = `%${search.trim()}%`;
+      qb.andWhere(
+        '(c.full_name ILIKE :s OR c.phone ILIKE :s OR c.email ILIKE :s)',
+        { s },
+      );
+    }
+    const [data, total] = await qb.skip(skip).take(take).getManyAndCount();
+    return { data, meta: paginationMeta(p, l, total) };
   }
 
   async updateUserStatus(id: string, isActive: boolean) {

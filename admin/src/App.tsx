@@ -4,6 +4,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import Categories from './pages/Categories';
+import Brands from './pages/Brands';
+import Customers from './pages/Customers';
 import Orders from './pages/Orders';
 import Users from './pages/Users';
 import BankAccounts from './pages/BankAccounts';
@@ -22,8 +24,10 @@ export default function App() {
         <Route path="/admin" element={<PrivateRoute><Layout /></PrivateRoute>}>
           <Route index element={<Dashboard />} />
           <Route path="categories" element={<Categories />} />
+          <Route path="brands" element={<Brands />} />
           <Route path="products" element={<Products />} />
           <Route path="orders" element={<Orders />} />
+          <Route path="customers" element={<Customers />} />
           <Route path="users" element={<Users />} />
           <Route path="bank-accounts" element={<BankAccounts />} />
         </Route>

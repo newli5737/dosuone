@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Brand } from './brand.entity';
 import { Category } from './category.entity';
 import { ProductImage } from './product-image.entity';
 import { ProductSpec } from './product-spec.entity';
@@ -43,8 +44,12 @@ export class Product {
   @Column({ default: 0 })
   stock: number;
 
-  @Column({ nullable: true })
-  brand: string;
+  @Column({ name: 'brand_id', nullable: true })
+  brandId: string | null;
+
+  @ManyToOne(() => Brand, (b) => b.products, { nullable: true })
+  @JoinColumn({ name: 'brand_id' })
+  brand: Brand | null;
 
   @Column({ name: 'thumbnail_url', nullable: true, type: 'text' })
   thumbnailUrl: string;

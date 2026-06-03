@@ -68,8 +68,8 @@ export class CreateProductDto {
   stock?: number;
 
   @IsOptional()
-  @IsString()
-  brand?: string;
+  @IsUUID()
+  brand_id?: string;
 
   @IsOptional()
   @IsString()
@@ -129,8 +129,8 @@ export class UpdateProductDto {
   stock?: number;
 
   @IsOptional()
-  @IsString()
-  brand?: string;
+  @IsUUID()
+  brand_id?: string;
 
   @IsOptional()
   @IsString()
@@ -173,6 +173,10 @@ export class ProductQueryDto {
 
   @IsOptional()
   category_id?: string;
+
+  @IsOptional()
+  @IsUUID()
+  brand_id?: string;
 
   @IsOptional()
   search?: string;

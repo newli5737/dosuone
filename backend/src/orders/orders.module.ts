@@ -9,12 +9,14 @@ import {
   Product,
 } from '../entities';
 import { BankAccountsModule } from '../bank-accounts/bank-accounts.module';
+import { CustomersModule } from '../customers/customers.module';
 import { AdminOrdersController, OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 
 @Module({
   imports: [
     BankAccountsModule,
+    CustomersModule,
     TypeOrmModule.forFeature([
       Order,
       OrderItem,

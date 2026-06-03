@@ -33,6 +33,7 @@ export async function uploadToCloudinary(file: File): Promise<CloudinaryImage> {
 import api from '../api';
 
 export async function deleteFromCloudinary(publicIds: string[]) {
-  if (!publicIds.length) return;
-  await api.post('/admin/cloudinary/delete', { public_ids: publicIds });
+  const ids = publicIds.map((id) => id?.trim()).filter(Boolean);
+  if (!ids.length) return;
+  await api.post('/admin/cloudinary/delete', { public_ids: ids });
 }

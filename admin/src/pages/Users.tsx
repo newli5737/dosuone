@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '../api';
 import PageHeader from '../components/PageHeader';
 import StatCard from '../components/StatCard';
-import FilterTabs from '../components/FilterTabs';
 import Pagination from '../components/Pagination';
 import Loading from '../components/Loading';
 import { field, formatDate, unwrapPaginated } from '../utils/format';
@@ -13,14 +12,13 @@ export default function Users() {
   const [meta, setMeta] = useState<PaginationMeta>({ page: 1, limit: 20, total: 0, total_pages: 1 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
 
   const load = (p = page) => {
     setLoading(true);
     api
-      .get('/admin/users', { params: { page: p, limit: 20 } })
+      .get('/admin/users', { params: { page: p, limit: 20, role: 'admin' } })
       .then((r) => {
         const { data, meta: m } = unwrapPaginated(r);
         setUsers(data);
@@ -40,20 +38,17 @@ export default function Users() {
       const name = String(field(u, 'full_name', 'fullName') ?? '').toLowerCase();
       const phone = String(u.phone ?? '').toLowerCase();
       if (q && !email.includes(q) && !name.includes(q) && !phone.includes(q)) return false;
-      if (roleFilter === 'admin' && u.role !== 'admin') return false;
-      if (roleFilter === 'customer' && u.role !== 'customer') return false;
       const active = Boolean(u.is_active ?? u.isActive ?? true);
       if (statusFilter === 'active' && !active) return false;
       if (statusFilter === 'locked' && active) return false;
       return true;
     });
-  }, [users, search, roleFilter, statusFilter]);
+  }, [users, search, statusFilter]);
 
   const stats = useMemo(() => {
-    const admins = users.filter((u) => u.role === 'admin').length;
     const active = users.filter((u) => Boolean(u.is_active ?? u.isActive ?? true)).length;
-    return { admins, customers: users.length - admins, active, locked: users.length - active };
-  }, [users]);
+    return { total: meta.total, active, locked: users.length - active };
+  }, [users, meta.total]);
 
   const toggle = async (id: string, active: boolean) => {
     await api.patch(`/admin/users/${id}/status`, { is_active: active });
@@ -66,7 +61,7 @@ export default function Users() {
     <div>
       <PageHeader
         title="Quản lý người dùng"
-        subtitle={`${meta.total} tài khoản đăng ký`}
+        subtitle="Tài khoản quản trị hệ thống (admin)"
         action={
           <button type="button" className="btn btn-ghost" onClick={() => load()}>
             Làm mới
@@ -74,22 +69,11 @@ export default function Users() {
         }
       />
 
-      <div className="stat-grid stat-grid-4">
-        <StatCard label="Tổng (trang)" value={String(users.length)} hint={`${meta.total} toàn hệ thống`} tone="indigo" />
-        <StatCard label="Admin" value={String(stats.admins)} tone="blue" />
-        <StatCard label="Khách hàng" value={String(stats.customers)} tone="emerald" />
-        <StatCard label="Đang khóa" value={String(stats.locked)} tone="warn" />
+      <div className="stat-grid stat-grid-3">
+        <StatCard label="Tổng admin" value={String(stats.total)} tone="indigo" />
+        <StatCard label="Đang hoạt động" value={String(stats.active)} tone="emerald" />
+        <StatCard label="Đã khóa" value={String(stats.locked)} tone="warn" />
       </div>
-
-      <FilterTabs
-        tabs={[
-          { key: 'all', label: 'Tất cả' },
-          { key: 'customer', label: 'Khách' },
-          { key: 'admin', label: 'Admin' },
-        ]}
-        active={roleFilter}
-        onChange={setRoleFilter}
-      />
 
       <div className="toolbar">
         <input
@@ -112,7 +96,6 @@ export default function Users() {
               <th>Email</th>
               <th>Họ tên</th>
               <th>SĐT</th>
-              <th>Vai trò</th>
               <th>Ngày tạo</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
@@ -131,11 +114,6 @@ export default function Users() {
                   </td>
                   <td>{String(field(u, 'full_name', 'fullName') ?? '—')}</td>
                   <td>{String(u.phone ?? '—')}</td>
-                  <td>
-                    <span className={u.role === 'admin' ? 'badge badge-info' : 'badge badge-muted'}>
-                      {u.role === 'admin' ? 'Admin' : 'Khách'}
-                    </span>
-                  </td>
                   <td className="text-muted">{formatDate(created)}</td>
                   <td>
                     <span className={active ? 'badge badge-success' : 'badge badge-danger'}>
@@ -156,7 +134,7 @@ export default function Users() {
             })}
           </tbody>
         </table>
-        {filtered.length === 0 && <div className="empty-state">Không có người dùng</div>}
+        {filtered.length === 0 && <div className="empty-state">Không có tài khoản admin</div>}
       </div>
 
       <Pagination meta={meta} onPage={setPage} />

@@ -30,7 +30,7 @@ export default function ImageUploader({ label, multiple = false, value, onChange
       }
       onChange(multiple ? [...value, ...uploaded] : uploaded);
     } catch {
-      setError('Upload thất bại. Kiểm tra preset Cloudinary.');
+      setError('Không tải được ảnh. Thử lại.');
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -46,30 +46,55 @@ export default function ImageUploader({ label, multiple = false, value, onChange
     });
   };
 
+  const detachItems = (keys: Set<string>) => {
+    onChange(value.filter((v) => !keys.has(v.localKey)));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const k of keys) next.delete(k);
+      return next;
+    });
+    setError('');
+  };
+
+  const deleteRemote = async (publicIds: string[]) => {
+    const ids = [...new Set(publicIds.map((id) => id?.trim()).filter(Boolean))];
+    if (!ids.length) return true;
+    try {
+      await deleteFromCloudinary(ids);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const removeSelected = async () => {
     if (!selected.size) return;
     const toRemove = value.filter((v) => selected.has(v.localKey));
-    const ids = toRemove.map((v) => v.public_id);
-    try {
-      await deleteFromCloudinary(ids);
-      onChange(value.filter((v) => !selected.has(v.localKey)));
-      setSelected(new Set());
-    } catch {
-      setError('Xóa ảnh trên Cloudinary thất bại');
+    const keys = new Set(toRemove.map((v) => v.localKey));
+    const remoteIds = toRemove.map((v) => v.public_id);
+    const ok = await deleteRemote(remoteIds);
+    if (ok) {
+      detachItems(keys);
+      return;
+    }
+    if (confirm('Không xóa được file trên máy chủ ảnh. Gỡ khỏi danh sách sản phẩm?')) {
+      detachItems(keys);
+    } else {
+      setError('Chưa gỡ ảnh. Kiểm tra backend đang chạy và đăng nhập admin.');
     }
   };
 
   const removeOne = async (item: UploadItem) => {
-    try {
-      await deleteFromCloudinary([item.public_id]);
-      onChange(value.filter((v) => v.localKey !== item.localKey));
-      setSelected((prev) => {
-        const next = new Set(prev);
-        next.delete(item.localKey);
-        return next;
-      });
-    } catch {
-      setError('Không xóa được ảnh');
+    const key = new Set([item.localKey]);
+    const ok = await deleteRemote([item.public_id]);
+    if (ok) {
+      detachItems(key);
+      return;
+    }
+    if (confirm('Không xóa được file trên máy chủ ảnh. Gỡ khỏi danh sách sản phẩm?')) {
+      detachItems(key);
+    } else {
+      setError('Chưa gỡ ảnh. Kiểm tra backend (port 3000) và cấu hình Cloudinary trong .env.');
     }
   };
 
@@ -84,8 +109,8 @@ export default function ImageUploader({ label, multiple = false, value, onChange
 
   return (
     <div className="uploader">
-      <div className="uploader-head">
-        <span className="uploader-label">{label}</span>
+      <div className={`uploader-head${label ? '' : ' uploader-head--actions-only'}`}>
+        {label ? <span className="uploader-label">{label}</span> : null}
         <div className="btn-group">
           <button
             type="button"
@@ -93,7 +118,7 @@ export default function ImageUploader({ label, multiple = false, value, onChange
             disabled={uploading}
             onClick={() => inputRef.current?.click()}
           >
-            {uploading ? 'Đang tải...' : multiple ? '+ Tải ảnh lên' : 'Tải ảnh lên'}
+            {uploading ? 'Đang tải...' : multiple ? 'Chọn ảnh' : 'Chọn ảnh'}
           </button>
           {multiple && selected.size > 0 && (
             <button type="button" className="btn btn-danger btn-sm" onClick={removeSelected}>
@@ -112,7 +137,7 @@ export default function ImageUploader({ label, multiple = false, value, onChange
       />
       {error && <p className="form-error">{error}</p>}
       {value.length === 0 ? (
-        <p className="text-muted" style={{ fontSize: 13 }}>Chưa có ảnh. Bấm tải lên (Cloudinary).</p>
+        <p className="text-muted uploader-empty">Chưa có ảnh</p>
       ) : (
         <div className={multiple ? 'uploader-grid' : 'uploader-single'}>
           {value.map((item, index) => (
@@ -130,11 +155,11 @@ export default function ImageUploader({ label, multiple = false, value, onChange
                 </label>
               )}
               <img src={item.url} alt="" />
-              {multiple && index === 0 && <span className="uploader-badge">Ảnh bìa</span>}
+              {multiple && index === 0 && <span className="uploader-badge">Đại diện</span>}
               <div className="uploader-actions">
                 {multiple && index > 0 && (
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPrimary(item.localKey)}>
-                    Đặt bìa
+                    Đặt làm đại diện
                   </button>
                 )}
                 <button type="button" className="btn btn-danger btn-sm" onClick={() => removeOne(item)}>

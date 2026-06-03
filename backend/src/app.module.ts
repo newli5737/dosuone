@@ -5,6 +5,8 @@ import {
   Address,
   CartItem,
   Category,
+  Brand,
+  Customer,
   Notification,
   Order,
   OrderItem,
@@ -18,6 +20,8 @@ import {
 } from './entities';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
+import { BrandsModule } from './brands/brands.module';
+import { CustomersModule } from './customers/customers.module';
 import { ProductsModule } from './products/products.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
@@ -46,6 +50,8 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
         entities: [
           User,
           Category,
+          Brand,
+          Customer,
           Product,
           ProductImage,
           ProductSpec,
@@ -63,6 +69,8 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     }),
     AuthModule,
     CategoriesModule,
+    BrandsModule,
+    CustomersModule,
     ProductsModule,
     CartModule,
     OrdersModule,
