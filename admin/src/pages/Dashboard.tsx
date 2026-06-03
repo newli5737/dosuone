@@ -17,14 +17,14 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h2>Dashboard</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-        <Card title="Doanh thu tháng" value={formatVnd(overview.month_revenue ?? 0)} />
-        <Card title="Đơn hôm nay" value={String(overview.today_orders ?? 0)} />
-        <Card title="SP đang bán" value={String(overview.active_products ?? 0)} />
-        <Card title="User mới (7 ngày)" value={String(overview.new_users_week ?? 0)} />
+      <h1 className="page-title">Tổng quan</h1>
+      <div className="stat-grid">
+        <div className="stat-card"><div className="label">Doanh thu tháng</div><div className="value">{formatVnd(overview.month_revenue ?? 0)}</div></div>
+        <div className="stat-card"><div className="label">Đơn hôm nay</div><div className="value">{overview.today_orders ?? 0}</div></div>
+        <div className="stat-card"><div className="label">SP đang bán</div><div className="value">{overview.active_products ?? 0}</div></div>
+        <div className="stat-card"><div className="label">User mới (7 ngày)</div><div className="value">{overview.new_users_week ?? 0}</div></div>
       </div>
-      <h3>Doanh thu 30 ngày</h3>
+      <h3 style={{ marginBottom: 12 }}>Doanh thu 30 ngày</h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={revenue}>
           <XAxis dataKey="date" />
@@ -33,30 +33,23 @@ export default function Dashboard() {
           <Line type="monotone" dataKey="revenue" stroke="#2563EB" />
         </LineChart>
       </ResponsiveContainer>
-      <h3>Top sản phẩm bán chạy</h3>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr><th>Tên</th><th>Đã bán</th><th>Doanh thu</th></tr>
-        </thead>
-        <tbody>
-          {topProducts.map((p, i) => (
-            <tr key={i}>
-              <td>{String(p.product_name)}</td>
-              <td>{String(p.sold)}</td>
-              <td>{formatVnd(Number(p.revenue))}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function Card({ title, value }: { title: string; value: string }) {
-  return (
-    <div style={{ background: '#fff', padding: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-      <div style={{ color: '#64748B', fontSize: 14 }}>{title}</div>
-      <div style={{ fontSize: 22, fontWeight: 'bold', marginTop: 8 }}>{value}</div>
+      <h3 style={{ margin: '24px 0 12px' }}>Top sản phẩm bán chạy</h3>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Tên</th><th>Đã bán</th><th>Doanh thu</th></tr>
+          </thead>
+          <tbody>
+            {topProducts.map((p, i) => (
+              <tr key={i}>
+                <td>{String(p.product_name)}</td>
+                <td>{String(p.sold)}</td>
+                <td>{formatVnd(Number(p.revenue))}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

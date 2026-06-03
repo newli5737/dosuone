@@ -1,71 +1,27 @@
-# Deploy DOSUONE (`/home/dosuone`)
+# Deploy DOSUONE — /home/dosuone
 
-## Port & PM2
+Admin HTTPS: https://one.dosutech.site  
+API cho admin (cùng domain): https://one.dosutech.site/api/v1  
+API riêng (mobile, sau cert): https://api-one.dosutech.site/api/v1  
 
-| Thành phần | Giá trị |
-|------------|---------|
-| PM2 | `dosuone-one-api` |
-| Port | **3018** |
-| API | `https://api-one.dosutech.site/api/v1` |
-| Admin | `https://one.dosutech.site` |
+PM2: dosuone-one-api — port 3018
 
-## Lần đầu (HTTP)
+## Sửa nhanh sau khi pull (admin xấu / API lỗi SSL)
 
 ```bash
 cd /home/dosuone
 git pull
-bash deploy/setup-vps.sh
-# Copy nginx HTTP-only từ commit cũ hoặc certbot trước — xem bước HTTPS bên dưới
+chmod +x deploy/fix-vps.sh
+bash deploy/fix-vps.sh
 ```
 
-## Bật HTTPS + redirect (sau khi DNS OK)
-
-**Cách 1 — Certbot tự chỉnh nginx (đơn giản):**
-
-```bash
-sudo certbot --nginx -d api-one.dosutech.site --redirect
-sudo certbot --nginx -d one.dosutech.site --redirect
-bash /home/dosuone/deploy/enable-https.sh
-```
-
-Script `enable-https.sh` sẽ: copy config HTTPS từ repo, sửa `backend/.env` CORS, build lại admin, `pm2 reload`.
-
-**Cách 2 — Cert trước, copy config repo:**
+## Cert api-one (khi cần HTTPS subdomain riêng)
 
 ```bash
 sudo certbot certonly --nginx -d api-one.dosutech.site
-sudo certbot certonly --nginx -d one.dosutech.site
-bash /home/dosuone/deploy/enable-https.sh
+bash deploy/enable-https.sh
 ```
 
-Hoặc một lệnh cert cả hai (cùng cert nếu certbot cho phép):
+## Tài khoản
 
-```bash
-CERTBOT_EMAIL=admin@dosutech.site bash deploy/enable-https.sh
-```
-
-## Cập nhật `.env` trên VPS (sau HTTPS)
-
-`backend/.env`:
-
-```env
-PORT=3018
-CORS_ORIGINS=https://one.dosutech.site
-```
-
-Rebuild admin:
-
-```bash
-cd /home/dosuone/admin
-npm run build
-pm2 reload dosuone-one-api
-```
-
-## Mobile
-
-`api_constants.dart` trỏ `https://api-one.dosutech.site/api/v1` — build lại APK/IPA sau khi API HTTPS sống.
-
-## Tài khoản test
-
-- Admin: `admin@dosuone.com` / `admin123`
-- Khách: `customer@dosuone.com` / `customer123`
+admin@dosuone.com / admin123
