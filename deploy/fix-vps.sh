@@ -26,7 +26,10 @@ sudo cp "$ROOT/deploy/nginx/one.dosutech.site.conf" /etc/nginx/sites-available/
 sudo cp "$ROOT/deploy/nginx/api-one.dosutech.site.conf" /etc/nginx/sites-available/
 sudo ln -sf /etc/nginx/sites-available/one.dosutech.site.conf /etc/nginx/sites-enabled/
 sudo ln -sf /etc/nginx/sites-available/api-one.dosutech.site.conf /etc/nginx/sites-enabled/
-sudo nginx -t
+if ! sudo nginx -t; then
+  echo "Nginx loi. Thu bo http2 trong deploy/nginx/*.conf neu nginx cu."
+  exit 1
+fi
 sudo systemctl reload nginx
 
 echo "Done. Admin: https://one.dosutech.site"
