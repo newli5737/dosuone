@@ -1,6 +1,8 @@
 class ApiConstants {
-  // Máy thật (cùng WiFi): IP máy dev | Emulator: 10.0.2.2 | Desktop: localhost
-  static const baseUrl = 'http://192.168.1.52:3000/api/v1';
+  // Production VPS
+  static const baseUrl = 'https://api-one.dosutech.site/api/v1';
+  // Dev local: http://localhost:3000/api/v1 | Emulator: http://10.0.2.2:3000/api/v1
+  // Dev máy thật LAN: http://<IP-máy-dev>:3000/api/v1
 
   static const authRegister = '/auth/register';
   static const authLogin = '/auth/login';

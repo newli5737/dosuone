@@ -1,53 +1,71 @@
-# Deploy DOSUONE lên VPS (`/home/dosuone`)
+# Deploy DOSUONE (`/home/dosuone`)
 
 ## Port & PM2
 
 | Thành phần | Giá trị |
 |------------|---------|
-| PM2 name | `dosuone-one-api` |
-| Port API | **3018** (không dùng 3000) |
-| API public | `http://api-one.dosutech.site/api/v1` |
-| Admin | `http://one.dosutech.site` |
+| PM2 | `dosuone-one-api` |
+| Port | **3018** |
+| API | `https://api-one.dosutech.site/api/v1` |
+| Admin | `https://one.dosutech.site` |
 
-## Lần đầu trên VPS
-
-```bash
-cd /home/dosuone
-chmod +x deploy/setup-vps.sh
-bash deploy/setup-vps.sh
-```
-
-Script sẽ: tạo `.env` (nếu chưa có), `npm ci` + build backend, `db:create`, **seed**, build admin, `pm2 startOrReload`.
-
-## Nginx
-
-```bash
-sudo cp /home/dosuone/deploy/nginx/*.conf /etc/nginx/sites-available/
-sudo ln -sf /etc/nginx/sites-available/api-one.dosutech.site.conf /etc/nginx/sites-enabled/
-sudo ln -sf /etc/nginx/sites-available/one.dosutech.site.conf /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
-```
-
-## Certbot (sau)
-
-```bash
-sudo certbot --nginx -d api-one.dosutech.site
-sudo certbot --nginx -d one.dosutech.site
-```
-
-Sau HTTPS, build lại admin:
-
-```bash
-cd /home/dosuone/admin
-VITE_API_URL=https://api-one.dosutech.site/api/v1 npm run build
-```
-
-Cập nhật `CORS_ORIGINS` trong `backend/.env` nếu cần.
-
-## Cập nhật code
+## Lần đầu (HTTP)
 
 ```bash
 cd /home/dosuone
 git pull
 bash deploy/setup-vps.sh
+# Copy nginx HTTP-only từ commit cũ hoặc certbot trước — xem bước HTTPS bên dưới
 ```
+
+## Bật HTTPS + redirect (sau khi DNS OK)
+
+**Cách 1 — Certbot tự chỉnh nginx (đơn giản):**
+
+```bash
+sudo certbot --nginx -d api-one.dosutech.site --redirect
+sudo certbot --nginx -d one.dosutech.site --redirect
+bash /home/dosuone/deploy/enable-https.sh
+```
+
+Script `enable-https.sh` sẽ: copy config HTTPS từ repo, sửa `backend/.env` CORS, build lại admin, `pm2 reload`.
+
+**Cách 2 — Cert trước, copy config repo:**
+
+```bash
+sudo certbot certonly --nginx -d api-one.dosutech.site
+sudo certbot certonly --nginx -d one.dosutech.site
+bash /home/dosuone/deploy/enable-https.sh
+```
+
+Hoặc một lệnh cert cả hai (cùng cert nếu certbot cho phép):
+
+```bash
+CERTBOT_EMAIL=admin@dosutech.site bash deploy/enable-https.sh
+```
+
+## Cập nhật `.env` trên VPS (sau HTTPS)
+
+`backend/.env`:
+
+```env
+PORT=3018
+CORS_ORIGINS=https://one.dosutech.site
+```
+
+Rebuild admin:
+
+```bash
+cd /home/dosuone/admin
+npm run build
+pm2 reload dosuone-one-api
+```
+
+## Mobile
+
+`api_constants.dart` trỏ `https://api-one.dosutech.site/api/v1` — build lại APK/IPA sau khi API HTTPS sống.
+
+## Tài khoản test
+
+- Admin: `admin@dosuone.com` / `admin123`
+- Khách: `customer@dosuone.com` / `customer123`

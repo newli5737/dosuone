@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="/home/dosuone"
-API_URL="${VITE_API_URL:-http://api-one.dosutech.site/api/v1}"
+API_URL="${VITE_API_URL:-https://api-one.dosutech.site/api/v1}"
 
 echo "==> DOSUONE setup @ $ROOT"
 
@@ -41,5 +41,6 @@ echo "    sudo ln -sf /etc/nginx/sites-available/one.dosutech.site.conf /etc/ngi
 echo "    sudo nginx -t && sudo systemctl reload nginx"
 echo ""
 echo "Xong. API local: http://127.0.0.1:3018/api/v1"
-echo "     Public:     http://api-one.dosutech.site/api/v1"
-echo "     Admin:      http://one.dosutech.site"
+echo "     Sau certbot: bash deploy/enable-https.sh"
+echo "     Public:      https://api-one.dosutech.site/api/v1"
+echo "     Admin:       https://one.dosutech.site"
