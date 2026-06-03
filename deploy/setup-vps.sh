@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Chạy trên VPS (root): bash /home/dosuTech/appbandt/deploy/setup-vps.sh
+# Chạy trên VPS (root): bash /home/dosuone/deploy/setup-vps.sh
 set -euo pipefail
 
-ROOT="/home/dosuTech/appbandt"
+ROOT="/home/dosuone"
 API_URL="${VITE_API_URL:-http://api-one.dosutech.site/api/v1}"
 
 echo "==> DOSUONE setup @ $ROOT"

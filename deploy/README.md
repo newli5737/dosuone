@@ -1,4 +1,4 @@
-# Deploy DOSUONE lên VPS (`/home/dosuTech/appbandt`)
+# Deploy DOSUONE lên VPS (`/home/dosuone`)
 
 ## Port & PM2
 
@@ -12,7 +12,7 @@
 ## Lần đầu trên VPS
 
 ```bash
-cd /home/dosuTech/appbandt
+cd /home/dosuone
 chmod +x deploy/setup-vps.sh
 bash deploy/setup-vps.sh
 ```
@@ -22,7 +22,7 @@ Script sẽ: tạo `.env` (nếu chưa có), `npm ci` + build backend, `db:creat
 ## Nginx
 
 ```bash
-sudo cp /home/dosuTech/appbandt/deploy/nginx/*.conf /etc/nginx/sites-available/
+sudo cp /home/dosuone/deploy/nginx/*.conf /etc/nginx/sites-available/
 sudo ln -sf /etc/nginx/sites-available/api-one.dosutech.site.conf /etc/nginx/sites-enabled/
 sudo ln -sf /etc/nginx/sites-available/one.dosutech.site.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
@@ -38,7 +38,7 @@ sudo certbot --nginx -d one.dosutech.site
 Sau HTTPS, build lại admin:
 
 ```bash
-cd /home/dosuTech/appbandt/admin
+cd /home/dosuone/admin
 VITE_API_URL=https://api-one.dosutech.site/api/v1 npm run build
 ```
 
@@ -47,7 +47,7 @@ Cập nhật `CORS_ORIGINS` trong `backend/.env` nếu cần.
 ## Cập nhật code
 
 ```bash
-cd /home/dosuTech/appbandt
+cd /home/dosuone
 git pull
 bash deploy/setup-vps.sh
 ```

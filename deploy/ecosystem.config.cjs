@@ -7,7 +7,7 @@ module.exports = {
   apps: [
     {
       name: 'dosuone-one-api',
-      cwd: '/home/dosuTech/appbandt/backend',
+      cwd: '/home/dosuone/backend',
       script: 'dist/main.js',
       instances: 1,
       exec_mode: 'fork',
@@ -17,8 +17,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
       },
-      error_file: '/home/dosuTech/appbandt/logs/api-error.log',
-      out_file: '/home/dosuTech/appbandt/logs/api-out.log',
+      error_file: '/home/dosuone/logs/api-error.log',
+      out_file: '/home/dosuone/logs/api-out.log',
       merge_logs: true,
       time: true,
     },
