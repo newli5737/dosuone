@@ -1,10 +1,11 @@
-/** Ảnh nguồn (JPEG ổn định) — seed script tải về rồi upload Cloudinary */
+/**
+ * Danh mục = loại sản phẩm (Điện thoại, Tablet…)
+ * Thương hiệu = hãng (Apple, Samsung…) — tham chiếu menu CellphoneS / thị trường VN
+ */
 export const SOURCE_IMAGES: Record<string, string> = {
-  'cat-apple': 'https://picsum.photos/id/180/800/800',
-  'cat-samsung': 'https://picsum.photos/id/96/800/800',
-  'cat-xiaomi': 'https://picsum.photos/id/201/800/800',
-  'cat-oppo': 'https://picsum.photos/id/2/800/800',
-  'cat-google': 'https://picsum.photos/id/160/800/800',
+  'cat-dien-thoai': 'https://picsum.photos/id/180/800/800',
+  'cat-may-tinh-bang': 'https://picsum.photos/id/201/800/800',
+  'cat-dien-thoai-pho-thong': 'https://picsum.photos/id/60/800/800',
   'iphone-15-pro': 'https://picsum.photos/id/180/900/900',
   'iphone-14': 'https://picsum.photos/id/26/900/900',
   'galaxy-s24': 'https://picsum.photos/id/96/900/900',
@@ -14,21 +15,39 @@ export const SOURCE_IMAGES: Record<string, string> = {
   'pixel-8-pro': 'https://picsum.photos/id/160/900/900',
 };
 
+/** Hãng điện thoại / tablet phổ biến tại VN */
 export const BRANDS = [
   { name: 'Apple', slug: 'apple' },
   { name: 'Samsung', slug: 'samsung' },
   { name: 'Xiaomi', slug: 'xiaomi' },
   { name: 'OPPO', slug: 'oppo' },
+  { name: 'Tecno', slug: 'tecno' },
+  { name: 'HONOR', slug: 'honor' },
+  { name: 'Nubia', slug: 'nubia' },
+  { name: 'Sony', slug: 'sony' },
+  { name: 'Nokia', slug: 'nokia' },
+  { name: 'Nothing', slug: 'nothing' },
+  { name: 'Masstel', slug: 'masstel' },
+  { name: 'realme', slug: 'realme' },
+  { name: 'Itel', slug: 'itel' },
+  { name: 'Huawei', slug: 'huawei' },
+  { name: 'Meizu', slug: 'meizu' },
+  { name: 'Infinix', slug: 'infinix' },
   { name: 'Google', slug: 'google' },
+  { name: 'Lenovo', slug: 'lenovo' },
+  { name: 'Teclast', slug: 'teclast' },
+  { name: 'Vivo', slug: 'vivo' },
 ] as const;
 
+/** Danh mục chính trên app (không trùng với thương hiệu) */
 export const CATEGORIES = [
-  { name: 'Apple', slug: 'apple', imageKey: 'cat-apple' },
-  { name: 'Samsung', slug: 'samsung', imageKey: 'cat-samsung' },
-  { name: 'Xiaomi', slug: 'xiaomi', imageKey: 'cat-xiaomi' },
-  { name: 'OPPO', slug: 'oppo', imageKey: 'cat-oppo' },
-  { name: 'Google', slug: 'google', imageKey: 'cat-google' },
+  { name: 'Điện thoại', slug: 'dien-thoai', imageKey: 'cat-dien-thoai' },
+  { name: 'Máy tính bảng', slug: 'may-tinh-bang', imageKey: 'cat-may-tinh-bang' },
+  { name: 'Điện thoại phổ thông', slug: 'dien-thoai-pho-thong', imageKey: 'cat-dien-thoai-pho-thong' },
 ] as const;
+
+/** Slug danh mục cũ (trùng tên hãng) — seed sẽ ẩn sau khi chuyển sang cấu trúc mới */
+export const LEGACY_CATEGORY_SLUGS = ['apple', 'samsung', 'xiaomi', 'oppo', 'google'] as const;
 
 export type ProductSeedDef = {
   categorySlug: string;
@@ -49,7 +68,7 @@ export type ProductSeedDef = {
 
 export const PRODUCTS: ProductSeedDef[] = [
   {
-    categorySlug: 'apple',
+    categorySlug: 'dien-thoai',
     brandSlug: 'apple',
     name: 'iPhone 15 Pro Max 256GB',
     slug: 'iphone-15-pro-max',
@@ -72,7 +91,7 @@ export const PRODUCTS: ProductSeedDef[] = [
     ],
   },
   {
-    categorySlug: 'apple',
+    categorySlug: 'dien-thoai',
     brandSlug: 'apple',
     name: 'iPhone 14 128GB',
     slug: 'iphone-14',
@@ -94,7 +113,7 @@ export const PRODUCTS: ProductSeedDef[] = [
     ],
   },
   {
-    categorySlug: 'samsung',
+    categorySlug: 'dien-thoai',
     brandSlug: 'samsung',
     name: 'Galaxy S24 Ultra 512GB',
     slug: 'samsung-galaxy-s24-ultra',
@@ -117,7 +136,7 @@ export const PRODUCTS: ProductSeedDef[] = [
     ],
   },
   {
-    categorySlug: 'samsung',
+    categorySlug: 'dien-thoai',
     brandSlug: 'samsung',
     name: 'Galaxy A55 5G 8/256GB',
     slug: 'galaxy-a55',
@@ -139,7 +158,7 @@ export const PRODUCTS: ProductSeedDef[] = [
     ],
   },
   {
-    categorySlug: 'xiaomi',
+    categorySlug: 'dien-thoai',
     brandSlug: 'xiaomi',
     name: 'Xiaomi 14 12/512GB',
     slug: 'xiaomi-14',
@@ -161,7 +180,7 @@ export const PRODUCTS: ProductSeedDef[] = [
     ],
   },
   {
-    categorySlug: 'oppo',
+    categorySlug: 'dien-thoai',
     brandSlug: 'oppo',
     name: 'OPPO Find X7 Ultra',
     slug: 'oppo-find-x7-ultra',
@@ -182,7 +201,7 @@ export const PRODUCTS: ProductSeedDef[] = [
     ],
   },
   {
-    categorySlug: 'google',
+    categorySlug: 'dien-thoai',
     brandSlug: 'google',
     name: 'Google Pixel 8 Pro',
     slug: 'google-pixel-8-pro',

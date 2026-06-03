@@ -18,7 +18,7 @@ import {
   UserRole,
 } from './entities';
 import { resolveAllMedia, type CloudinaryAsset } from './seed/cloudinary-media';
-import { BRANDS, CATEGORIES, PRODUCTS } from './seed/definitions';
+import { BRANDS, CATEGORIES, LEGACY_CATEGORY_SLUGS, PRODUCTS } from './seed/definitions';
 
 async function seed() {
   const forceMedia = process.argv.includes('--force-media');
@@ -97,6 +97,15 @@ async function seed() {
       await categoriesRepo.save(cat);
     }
     categoryMap.set(c.slug, cat.id);
+  }
+
+  for (const legacySlug of LEGACY_CATEGORY_SLUGS) {
+    const old = await categoriesRepo.findOne({ where: { slug: legacySlug } });
+    if (old && old.isActive) {
+      old.isActive = false;
+      await categoriesRepo.save(old);
+      console.log(`  − Ẩn danh mục cũ: ${legacySlug}`);
+    }
   }
 
   console.log('\n📱 Sản phẩm…');
