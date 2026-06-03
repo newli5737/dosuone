@@ -110,7 +110,7 @@ export default function BankAccounts() {
     <div>
       <PageHeader
         title="Tài khoản ngân hàng"
-        subtitle="STK nhận chuyển khoản · QR Sepay khi khách checkout"
+        subtitle="STK nhận chuyển khoản khi khách thanh toán"
         action={
           <button type="button" className="btn btn-primary" onClick={openCreate}>
             + Thêm STK
@@ -127,14 +127,6 @@ export default function BankAccounts() {
           hint={defaultAcc ? String(field(defaultAcc, 'account_number', 'accountNumber') ?? '') : 'Chưa đặt'}
           tone="violet"
         />
-      </div>
-
-      <div className="panel panel-info">
-        <strong>QR Sepay</strong>
-        <p className="text-muted" style={{ margin: '8px 0 0' }}>
-          Khi khách chọn <em>Chuyển khoản</em>, app hiển thị STK mặc định + số tiền + mã đơn + ảnh QR từ{' '}
-          <code>qr.sepay.vn</code>. Mã ngân hàng dùng short name (VCB, TCB, MB…).
-        </p>
       </div>
 
       <div className="table-wrap">
