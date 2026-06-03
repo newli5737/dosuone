@@ -1,5 +1,7 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { IsBoolean } from 'class-validator';
+import { BankAccountsService } from '../bank-accounts/bank-accounts.service';
+import { CreateBankAccountDto, UpdateBankAccountDto } from '../bank-accounts/dto/bank-account.dto';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -15,7 +17,10 @@ class UserStatusDto {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class AdminController {
-  constructor(private service: AdminService) {}
+  constructor(
+    private service: AdminService,
+    private bankAccounts: BankAccountsService,
+  ) {}
 
   @Get('stats/overview')
   overview() {
@@ -32,6 +37,11 @@ export class AdminController {
     return this.service.topProducts();
   }
 
+  @Get('stats/low-stock')
+  lowStock(@Query('limit') limit?: number) {
+    return this.service.lowStock(limit);
+  }
+
   @Get('users')
   listUsers(@Query('page') page?: number, @Query('limit') limit?: number) {
     return this.service.listUsers(page, limit);
@@ -40,5 +50,25 @@ export class AdminController {
   @Patch('users/:id/status')
   updateUserStatus(@Param('id') id: string, @Body() dto: UserStatusDto) {
     return this.service.updateUserStatus(id, dto.is_active);
+  }
+
+  @Get('bank-accounts')
+  listBankAccounts() {
+    return this.bankAccounts.findAllAdmin();
+  }
+
+  @Post('bank-accounts')
+  createBankAccount(@Body() dto: CreateBankAccountDto) {
+    return this.bankAccounts.create(dto);
+  }
+
+  @Patch('bank-accounts/:id')
+  updateBankAccount(@Param('id') id: string, @Body() dto: UpdateBankAccountDto) {
+    return this.bankAccounts.update(id, dto);
+  }
+
+  @Delete('bank-accounts/:id')
+  removeBankAccount(@Param('id') id: string) {
+    return this.bankAccounts.remove(id);
   }
 }

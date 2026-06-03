@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/auth/auth_redirect.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/app_logo.dart';
 import '../../../core/utils/snackbar_util.dart';
 import '../../../core/utils/validators.dart';
 import '../providers/auth_provider.dart';
@@ -29,9 +30,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.go('/profile'),
         ),
+        title: const Text('Đăng nhập'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -40,29 +42,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: AppColors.gradientPrimary,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Center(
+                child: Column(
                   children: [
-                    Icon(Icons.lock_outline_rounded, color: Colors.white, size: 32),
-                    SizedBox(height: 12),
+                    const AppLogo(height: 72),
+                    const SizedBox(height: 16),
                     Text(
-                      'Đăng nhập',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      'Chào mừng trở lại',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Chỉ cần khi thanh toán hoặc xem đơn hàng',
-                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Đăng nhập để đặt hàng và theo dõi đơn',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                     ),
                   ],
                 ),
@@ -117,7 +111,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               OutlinedButton(
                 onPressed: () {
                   final r = _redirect;
-                  context.push(r != null ? '/register?redirect=$r' : '/register');
+                  context.go(r != null ? '/register?redirect=$r' : '/register');
                 },
                 child: const Text('Tạo tài khoản mới'),
               ),

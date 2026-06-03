@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/app_logo.dart';
 import '../../../core/network/auth_interceptor.dart';
 import '../providers/auth_provider.dart';
 
@@ -57,21 +58,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.smartphone_rounded, size: 72, color: Colors.white),
-                SizedBox(height: 20),
+                AppLogo(height: 120, borderRadius: BorderRadius.all(Radius.circular(24))),
+                SizedBox(height: 24),
                 Text(
-                  'DOSUONE',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 36,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 2,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Phone Store',
-                  style: TextStyle(color: Colors.white70, fontSize: 15, letterSpacing: 1),
+                  'Cửa hàng điện thoại chính hãng',
+                  style: TextStyle(color: Colors.white70, fontSize: 15),
                 ),
               ],
             ),

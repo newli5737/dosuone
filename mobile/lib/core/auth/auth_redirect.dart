@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/cart/providers/cart_provider.dart';
 void goToLogin(BuildContext context, {required String returnPath}) {
-  context.push('/login?redirect=${Uri.encodeComponent(returnPath)}');
+  context.go('/login?redirect=${Uri.encodeComponent(returnPath)}');
 }
 
 Future<void> onAuthSuccess(BuildContext context, WidgetRef ref, {String? redirect}) async {

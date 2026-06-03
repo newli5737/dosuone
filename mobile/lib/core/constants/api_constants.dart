@@ -1,6 +1,6 @@
 class ApiConstants {
   // Production VPS
-  static const baseUrl = 'https://one.dosutech.site/api/v1';
+  static const baseUrl = 'https://api-one.dosutech.site/api/v1';
   // Dev local: http://localhost:3000/api/v1 | Emulator: http://10.0.2.2:3000/api/v1
   // Dev máy thật LAN: http://<IP-máy-dev>:3000/api/v1
 
@@ -19,4 +19,5 @@ class ApiConstants {
   static const addresses = '/addresses';
   static const notifications = '/notifications';
   static const notificationsUnread = '/notifications/unread-count';
+  static const bankAccountsCheckout = '/bank-accounts/checkout';
 }

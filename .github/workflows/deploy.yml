@@ -1,0 +1,35 @@
+name: Deploy VPS
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-dosuone
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Pull & build on VPS
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE }}
+          port: 22
+          command_timeout: 20m
+          script_stop: true
+          script: |
+            set -e
+            cd /home/dosuone
+            git fetch origin
+            git checkout -- deploy/ 2>/dev/null || true
+            git pull --ff-only origin ${{ github.ref_name }} || git pull --ff-only
+            cd backend && npm ci && npm run build
+            pm2 reload dosuone-one-api --update-env
+            cd ../admin && npm ci && npm run build
+            echo "Deploy OK: https://one.dosutech.site"

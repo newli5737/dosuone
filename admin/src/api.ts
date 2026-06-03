@@ -15,6 +15,7 @@ export async function login(email: string, password: string) {
   const payload = data.data ?? data;
   localStorage.setItem('access_token', payload.access_token);
   localStorage.setItem('refresh_token', payload.refresh_token);
+  if (payload.user?.email) localStorage.setItem('admin_email', payload.user.email);
   return payload.user;
 }
 

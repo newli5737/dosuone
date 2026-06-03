@@ -28,18 +28,36 @@ List<dynamic> _extractProductList(dynamic body) {
   return [];
 }
 
-final newestProductsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+Future<List<Map<String, dynamic>>> _fetchProducts(
+  Ref ref, {
+  required Map<String, dynamic> query,
+}) async {
   try {
-    final res = await ref.read(dioProvider).get(
-      ApiConstants.products,
-      queryParameters: {'sort': 'newest', 'limit': 10},
-    );
+    final res = await ref.read(dioProvider).get(ApiConstants.products, queryParameters: query);
     final list = _extractProductList(res.data['data'] ?? res.data);
     return list.map((e) => normalizeProduct(Map<String, dynamic>.from(e as Map))).toList();
   } on DioException catch (e) {
     if (e.error is ApiException) throw e.error!;
     rethrow;
   }
+}
+
+final newestProductsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  return _fetchProducts(ref, query: {'sort': 'newest', 'limit': 12});
+});
+
+final topRatedProductsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  return _fetchProducts(ref, query: {'sort': 'rating', 'limit': 8});
+});
+
+final saleProductsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final all = await _fetchProducts(ref, query: {'limit': 40});
+  return all.where((p) {
+    final sale = p['sale_price'];
+    final price = p['price'];
+    if (sale == null || price == null) return false;
+    return (sale as num) < (price as num);
+  }).take(10).toList();
 });
 
 final productsProvider = FutureProvider.family<Map<String, dynamic>, Map<String, String>>(

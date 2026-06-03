@@ -1,22 +1,24 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 const nav = [
-  { to: '/admin', label: 'Tổng quan', end: true },
-  { to: '/admin/products', label: 'Sản phẩm' },
-  { to: '/admin/orders', label: 'Đơn hàng' },
-  { to: '/admin/users', label: 'Người dùng' },
+  { to: '/admin', label: 'Tổng quan', icon: '◉', end: true },
+  { to: '/admin/products', label: 'Sản phẩm', icon: '▣' },
+  { to: '/admin/orders', label: 'Đơn hàng', icon: '◎' },
+  { to: '/admin/users', label: 'Người dùng', icon: '◇' },
+  { to: '/admin/bank-accounts', label: 'STK ngân hàng', icon: '₫' },
 ];
 
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const email = localStorage.getItem('admin_email');
 
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-brand">
-          <span>DOSUONE</span>
-          <small>Admin</small>
+          <img src="/logo.png" alt="DOSUONE" className="admin-brand-logo" />
+          <small>Cửa hàng điện thoại</small>
         </div>
         <nav className="admin-nav">
           {nav.map((item) => {
@@ -29,86 +31,25 @@ export default function Layout() {
                 to={item.to}
                 className={active ? 'admin-nav-link active' : 'admin-nav-link'}
               >
+                <span className="admin-nav-icon">{item.icon}</span>
                 {item.label}
               </Link>
             );
           })}
         </nav>
-        <button
-          type="button"
-          className="btn btn-ghost admin-logout"
-          onClick={() => {
+        <div className="admin-sidebar-foot">
+          {email && <div className="admin-user">{email}</div>}
+          <button type="button" className="admin-logout" onClick={() => {
             localStorage.clear();
             navigate('/');
-          }}
-        >
-          Đăng xuất
-        </button>
+          }}>
+            Đăng xuất
+          </button>
+        </div>
       </aside>
-      <main className="admin-main">
+      <main className="admin-main admin-main--wide">
         <Outlet />
       </main>
-      <style>{`
-        .admin-shell {
-          display: flex;
-          min-height: 100vh;
-        }
-        .admin-sidebar {
-          width: 240px;
-          flex-shrink: 0;
-          background: #0f172a;
-          color: #e2e8f0;
-          padding: 20px 16px;
-          display: flex;
-          flex-direction: column;
-        }
-        .admin-brand span {
-          display: block;
-          font-size: 20px;
-          font-weight: 800;
-          color: #fff;
-          letter-spacing: -0.02em;
-        }
-        .admin-brand small {
-          color: #94a3b8;
-          font-size: 12px;
-        }
-        .admin-nav {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          margin-top: 28px;
-          flex: 1;
-        }
-        .admin-nav-link {
-          padding: 10px 14px;
-          border-radius: 10px;
-          font-weight: 500;
-          color: #94a3b8;
-        }
-        .admin-nav-link:hover {
-          background: rgba(255,255,255,0.06);
-          color: #fff;
-        }
-        .admin-nav-link.active {
-          background: #4f46e5;
-          color: #fff;
-        }
-        .admin-logout {
-          width: 100%;
-          color: #94a3b8 !important;
-          border-color: #334155 !important;
-        }
-        .admin-main {
-          flex: 1;
-          padding: 28px 32px;
-          overflow-x: auto;
-        }
-        @media (max-width: 768px) {
-          .admin-shell { flex-direction: column; }
-          .admin-sidebar { width: 100%; }
-        }
-      `}</style>
     </div>
   );
 }

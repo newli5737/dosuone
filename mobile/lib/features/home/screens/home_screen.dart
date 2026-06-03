@@ -6,15 +6,15 @@ import '../../../core/auth/auth_redirect.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/layout/responsive.dart';
+import '../../../core/widgets/app_logo.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/async_error_view.dart';
 import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/widgets/product_card.dart';
+import '../../../core/widgets/product_grid.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../auth/screens/profile_screen.dart';
 import '../../cart/providers/cart_provider.dart';
-import '../../order/screens/order_list_screen.dart';
 import '../providers/home_provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -26,8 +26,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _navIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -36,13 +34,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_navIndex != 0) {
-      return _buildAltTab();
-    }
-
     final categories = ref.watch(categoriesProvider);
     final featured = ref.watch(featuredProductsProvider);
     final newest = ref.watch(newestProductsProvider);
+    final topRated = ref.watch(topRatedProductsProvider);
+    final sale = ref.watch(saleProductsProvider);
     final cart = ref.watch(cartProvider);
     final isLoggedIn = ref.watch(authProvider).isAuthenticated;
 
@@ -54,13 +50,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ref.invalidate(categoriesProvider);
           ref.invalidate(featuredProductsProvider);
           ref.invalidate(newestProductsProvider);
+          ref.invalidate(topRatedProductsProvider);
+          ref.invalidate(saleProductsProvider);
         },
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: _HomeHeader(
-              cartCount: cart.items.length,
-              isLoggedIn: isLoggedIn,
-            )),
+            SliverToBoxAdapter(
+              child: _HomeHeader(cartCount: cart.items.length, isLoggedIn: isLoggedIn),
+            ),
             SliverToBoxAdapter(
               child: Transform.translate(
                 offset: const Offset(0, -20),
@@ -81,24 +78,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ],
                       ),
-                      child: Row(
+                      child: const Row(
                         children: [
-                          const Icon(Icons.search_rounded, color: AppColors.primary, size: 24),
-                          const SizedBox(width: 12),
+                          Icon(Icons.search_rounded, color: AppColors.primary, size: 24),
+                          SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Tìm iPhone, Samsung...',
-                              style: TextStyle(color: AppColors.textMuted, fontSize: 15, fontWeight: FontWeight.w500),
+                              'Tìm iPhone, Samsung, MacBook...',
+                              style: TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryLight,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.tune_rounded, size: 18, color: AppColors.primary),
-                          ),
+                          Icon(Icons.tune_rounded, size: 18, color: AppColors.primary),
                         ],
                       ),
                     ),
@@ -106,10 +100,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ),
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
+            const SliverToBoxAdapter(child: _QuickServicesRow()),
             featured.when(
               data: (products) => SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: SizedBox(
@@ -125,11 +121,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 showIndicator: products.length > 1,
                               ),
                               items: products.take(5).map((p) {
-                                final sale = p['sale_price'];
+                                final salePrice = p['sale_price'];
                                 final price = p['price'];
-                                String subtitle = 'Chính hãng · Giao nhanh';
-                                if (sale != null && price != null) {
-                                  final off = ((price as num) - (sale as num)).toInt();
+                                var subtitle = 'Chính hãng · Giao nhanh';
+                                if (salePrice != null && price != null) {
+                                  final off = ((price as num) - (salePrice as num)).toInt();
                                   if (off > 0) subtitle = 'Giảm ${formatVnd(off)} · Trả góp 0%';
                                 }
                                 return _BannerSlide(
@@ -158,7 +154,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             SliverToBoxAdapter(
               child: SectionHeader(
                 title: 'Danh mục',
-                subtitle: 'Thương hiệu nổi bật',
+                subtitle: 'Chọn thương hiệu',
+                onSeeAll: () => context.push('/products?title=${Uri.encodeComponent('Tất cả sản phẩm')}'),
               ),
             ),
             categories.when(
@@ -193,18 +190,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             SliverToBoxAdapter(
               child: SectionHeader(
+                title: 'Ưu đãi hot',
+                subtitle: 'Giá sốc hôm nay',
+                onSeeAll: () => context.push(
+                  '/products?title=${Uri.encodeComponent('Ưu đãi')}&sort=price_asc',
+                ),
+              ),
+            ),
+            sale.when(
+              data: (products) => _productStripSliver(context, products),
+              loading: () => _stripLoadingSliver(context),
+              error: (e, _) => SliverToBoxAdapter(
+                child: AsyncErrorView(error: e, onRetry: () => ref.invalidate(saleProductsProvider)),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: SectionHeader(
                 title: 'Nổi bật tuần này',
-                onSeeAll: () => context.push('/products?title=Sản phẩm nổi bật'),
+                onSeeAll: () => context.push('/products?title=${Uri.encodeComponent('Sản phẩm nổi bật')}'),
               ),
             ),
             featured.when(
               data: (products) => _productStripSliver(context, products),
-              loading: () => SliverToBoxAdapter(
-                child: SizedBox(
-                  height: homeProductStripHeight(context),
-                  child: const LoadingShimmer(count: 2),
-                ),
-              ),
+              loading: () => _stripLoadingSliver(context),
               error: (e, _) => SliverToBoxAdapter(
                 child: AsyncErrorView(
                   error: e,
@@ -222,12 +230,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             newest.when(
               data: (products) => _productStripSliver(context, products),
-              loading: () => SliverToBoxAdapter(
-                child: SizedBox(
-                  height: homeProductStripHeight(context),
-                  child: const LoadingShimmer(count: 2),
-                ),
-              ),
+              loading: () => _stripLoadingSliver(context),
               error: (e, _) => SliverToBoxAdapter(
                 child: AsyncErrorView(
                   error: e,
@@ -236,32 +239,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             SliverToBoxAdapter(
-              child: SizedBox(height: 72 + MediaQuery.paddingOf(context).bottom),
+              child: SectionHeader(
+                title: 'Đánh giá cao',
+                subtitle: 'Khách hàng tin chọn',
+                onSeeAll: () => context.push(
+                  '/products?title=${Uri.encodeComponent('Đánh giá cao')}&sort=rating',
+                ),
+              ),
+            ),
+            topRated.when(
+              data: (products) => SliverToBoxAdapter(
+                child: Padding(
+                  padding: screenPadding(context).copyWith(bottom: 8),
+                  child: ProductGrid(
+                    products: products.take(6).toList(),
+                    onProductTap: (p) => context.push('/product/${p['slug']}'),
+                  ),
+                ),
+              ),
+              loading: () => const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: LoadingShimmer(count: 4),
+                ),
+              ),
+              error: (e, _) => SliverToBoxAdapter(
+                child: AsyncErrorView(
+                  error: e,
+                  onRetry: () => ref.invalidate(topRatedProductsProvider),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: _TrustBanner(onShop: () => context.push('/products')),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(height: 24 + MediaQuery.paddingOf(context).bottom),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: _BottomNav(
-        index: _navIndex,
-        onChanged: (i) => setState(() => _navIndex = i),
-        isLoggedIn: isLoggedIn,
-      ),
     );
   }
 
-  Widget _buildAltTab() {
-    final isLoggedIn = ref.watch(authProvider).isAuthenticated;
-    if (_navIndex == 1) {
-      if (!isLoggedIn) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          goToLogin(context, returnPath: '/orders');
-          setState(() => _navIndex = 0);
-        });
-        return const Scaffold(body: SizedBox());
-      }
-      return const OrderListScreen();
-    }
-    return const ProfileScreen();
+  SliverToBoxAdapter _stripLoadingSliver(BuildContext context) {
+    return SliverToBoxAdapter(
+      child: SizedBox(
+        height: homeProductStripHeight(context),
+        child: const LoadingShimmer(count: 2),
+      ),
+    );
   }
 
   Widget _productStripSliver(BuildContext context, List<Map<String, dynamic>> products) {
@@ -299,6 +326,110 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
+class _QuickServicesRow extends StatelessWidget {
+  const _QuickServicesRow();
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      (Icons.local_shipping_outlined, 'Giao nhanh', '2h nội thành'),
+      (Icons.verified_outlined, 'Chính hãng', 'Bảo hành 12T'),
+      (Icons.credit_score_outlined, 'Trả góp', '0% lãi suất'),
+      (Icons.support_agent_outlined, 'Hỗ trợ', '24/7'),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Row(
+        children: items
+            .map(
+              (e) => Expanded(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(e.$1, size: 22, color: AppColors.primary),
+                      const SizedBox(height: 6),
+                      Text(
+                        e.$2,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        e.$3,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 9, color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _TrustBanner extends StatelessWidget {
+  const _TrustBanner({required this.onShop});
+  final VoidCallback onShop;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: AppColors.gradientPrimary,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Mua sắm an tâm tại DOSUONE',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'Đổi trả 7 ngày · Kiểm tra máy trước khi nhận',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            FilledButton(
+              onPressed: onShop,
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.primary,
+              ),
+              child: const Text('Mua ngay'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _HomeHeader extends StatelessWidget {
   const _HomeHeader({required this.cartCount, required this.isLoggedIn});
   final int cartCount;
@@ -320,22 +451,26 @@ class _HomeHeader extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(24, 16, 16, 32),
           child: Row(
             children: [
+              const AppLogo(height: 44, borderRadius: BorderRadius.all(Radius.circular(12))),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       isLoggedIn ? 'Xin chào 👋' : 'Chào mừng đến',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    const SizedBox(height: 4),
                     const Text(
-                      'DOSUONE',
+                      'Cửa hàng điện thoại',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -382,11 +517,7 @@ class _HeaderIcon extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(12),
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: Icon(icon, color: Colors.white),
-            ),
+            child: SizedBox(width: 44, height: 44, child: Icon(icon, color: Colors.white)),
           ),
         ),
         if (badge != null)
@@ -396,10 +527,7 @@ class _HeaderIcon extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(4),
               constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-              decoration: const BoxDecoration(
-                color: AppColors.sale,
-                shape: BoxShape.circle,
-              ),
+              decoration: const BoxDecoration(color: AppColors.sale, shape: BoxShape.circle),
               child: Text(
                 '$badge',
                 textAlign: TextAlign.center,
@@ -437,10 +565,7 @@ class _BannerSlide extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withValues(alpha: 0.75),
-                ],
+                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.75)],
               ),
             ),
           ),
@@ -454,11 +579,7 @@ class _BannerSlide extends StatelessWidget {
                   title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
                 Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 13)),
@@ -478,20 +599,13 @@ class _FallbackBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 168,
-      margin: const EdgeInsets.symmetric(horizontal: 24),
+      margin: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 10),
-          ),
-        ],
-        image: const DecorationImage(
-          image: AssetImage('assets/images/banner_fallback.png'),
-          fit: BoxFit.cover,
-        ),
+        gradient: AppColors.gradientPrimary,
+      ),
+      child: const Center(
+        child: AppLogo(height: 72, borderRadius: BorderRadius.all(Radius.circular(16))),
       ),
     );
   }
@@ -515,8 +629,6 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = _getIcon();
-
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -536,14 +648,14 @@ class _CategoryChip extends StatelessWidget {
                     offset: const Offset(0, 4),
                   ),
                 ],
-                border: Border.all(color: AppColors.cardBorder, width: 1),
+                border: Border.all(color: AppColors.cardBorder),
               ),
               alignment: Alignment.center,
-              child: FaIcon(
-                icon,
-                size: 28,
-                color: AppColors.primary,
-              ),
+              child: imageUrl != null && imageUrl!.isNotEmpty
+                  ? ClipOval(
+                      child: AppNetworkImage(url: imageUrl!, width: 56, height: 56, fit: BoxFit.cover),
+                    )
+                  : FaIcon(_getIcon(), size: 28, color: AppColors.primary),
             ),
             const SizedBox(height: 8),
             Text(
@@ -556,42 +668,6 @@ class _CategoryChip extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _BottomNav extends StatelessWidget {
-  const _BottomNav({
-    required this.index,
-    required this.onChanged,
-    required this.isLoggedIn,
-  });
-  final int index;
-  final ValueChanged<int> onChanged;
-  final bool isLoggedIn;
-
-  @override
-  Widget build(BuildContext context) {
-    return NavigationBar(
-      selectedIndex: index,
-      onDestinationSelected: onChanged,
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(Icons.home_rounded),
-          label: 'Trang chủ',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.receipt_long_outlined),
-          selectedIcon: Icon(Icons.receipt_long_rounded),
-          label: 'Đơn hàng',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.person_outline_rounded),
-          selectedIcon: Icon(Icons.person_rounded),
-          label: 'Tài khoản',
-        ),
-      ],
     );
   }
 }

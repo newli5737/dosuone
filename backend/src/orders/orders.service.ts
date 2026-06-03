@@ -13,10 +13,12 @@ import {
   Order,
   OrderItem,
   OrderStatus,
+  PaymentMethod,
   PaymentStatus,
   Product,
   User,
 } from '../entities';
+import { BankAccountsService } from '../bank-accounts/bank-accounts.service';
 import { calcShippingFee, generateOrderCode } from '../common/utils/order-code.util';
 import { paginate, paginationMeta } from '../common/utils/pagination.util';
 import { CreateOrderDto } from './dto/order.dto';
@@ -31,6 +33,7 @@ export class OrdersService {
     @InjectRepository(Address) private addressRepo: Repository<Address>,
     @InjectRepository(Product) private productsRepo: Repository<Product>,
     @InjectRepository(Notification) private notifRepo: Repository<Notification>,
+    private bankAccountsService: BankAccountsService,
   ) {}
 
   async create(userId: string, dto: CreateOrderDto) {
@@ -111,10 +114,22 @@ export class OrdersService {
         data: { order_id: savedOrder.id },
       });
 
-      return manager.findOne(Order, {
+      const fullOrder = await manager.findOne(Order, {
         where: { id: savedOrder.id },
         relations: { items: true },
       });
+      if (!fullOrder) throw new BadRequestException('Không tạo được đơn hàng');
+
+      const bankPayment = await this.bankAccountsService.buildForOrder(
+        dto.payment_method as PaymentMethod,
+        fullOrder.orderCode,
+        Number(fullOrder.total),
+      );
+
+      return {
+        ...fullOrder,
+        bank_payment: bankPayment,
+      };
     });
   }
 
@@ -138,7 +153,12 @@ export class OrdersService {
       relations: { items: true },
     });
     if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
-    return order;
+    const bankPayment = await this.bankAccountsService.buildForOrderOptional(
+      order.paymentMethod,
+      order.orderCode,
+      Number(order.total),
+    );
+    return bankPayment ? { ...order, bank_payment: bankPayment } : order;
   }
 
   async cancel(userId: string, id: string) {

@@ -23,6 +23,10 @@ class OrderListScreen extends ConsumerWidget {
       length: 5,
       child: Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => context.go('/home'),
+          ),
           title: const Text('Đơn hàng của tôi'),
           bottom: const TabBar(
             isScrollable: true,

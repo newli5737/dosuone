@@ -11,3 +11,4 @@ export * from './cart-item.entity';
 export * from './review.entity';
 export * from './wishlist.entity';
 export * from './notification.entity';
+export * from './bank-account.entity';

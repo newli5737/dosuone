@@ -20,12 +20,15 @@ if [ -f "$ROOT/backend/.env" ]; then
   fi
 fi
 
-cd "$ROOT/admin"
+cd "$ROOT/backend"
 npm ci
 npm run build
 
-cd "$ROOT"
-pm2 reload dosuone-one-api
+pm2 reload dosuone-one-api --update-env || pm2 start "$ROOT/deploy/ecosystem.config.cjs"
+
+cd "$ROOT/admin"
+npm ci
+npm run build
 
 sudo cp "$ROOT/deploy/nginx/one.dosutech.site.conf" /etc/nginx/sites-available/
 sudo cp "$ROOT/deploy/nginx/api-one.dosutech.site.conf" /etc/nginx/sites-available/

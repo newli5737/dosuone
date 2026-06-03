@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/auth/auth_redirect.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/app_logo.dart';
 import '../../../core/utils/snackbar_util.dart';
 import '../../../core/utils/validators.dart';
 import '../providers/auth_provider.dart';
@@ -29,8 +30,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       appBar: AppBar(
         title: const Text('Đăng ký'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.go('/profile'),
         ),
       ),
       body: Padding(
@@ -39,6 +40,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              const Center(child: AppLogo(height: 64)),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _name,
                 decoration: const InputDecoration(labelText: 'Họ và tên'),

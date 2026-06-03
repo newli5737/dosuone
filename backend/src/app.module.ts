@@ -14,6 +14,7 @@ import {
   Review,
   User,
   Wishlist,
+  BankAccount,
 } from './entities';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
@@ -25,6 +26,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
 import { AddressesModule } from './addresses/addresses.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AdminModule } from './admin/admin.module';
+import { BankAccountsModule } from './bank-accounts/bank-accounts.module';
 
 @Module({
   imports: [
@@ -52,6 +54,7 @@ import { AdminModule } from './admin/admin.module';
           Review,
           Wishlist,
           Notification,
+          BankAccount,
         ],
         synchronize: true,
       }),
@@ -66,6 +69,7 @@ import { AdminModule } from './admin/admin.module';
     AddressesModule,
     NotificationsModule,
     AdminModule,
+    BankAccountsModule,
   ],
 })
 export class AppModule {}

@@ -8,11 +8,13 @@ import {
   OrderItem,
   Product,
 } from '../entities';
+import { BankAccountsModule } from '../bank-accounts/bank-accounts.module';
 import { AdminOrdersController, OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 
 @Module({
   imports: [
+    BankAccountsModule,
     TypeOrmModule.forFeature([
       Order,
       OrderItem,

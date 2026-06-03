@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
-import { Between, Repository } from 'typeorm';
+import { Between, LessThan, Repository } from 'typeorm';
 import { Order, OrderStatus, Product, User } from '../entities';
 import { paginate, paginationMeta } from '../common/utils/pagination.util';
 
@@ -37,12 +37,65 @@ export class AdminService {
       where: { createdAt: Between(startOfWeek, new Date()) },
     });
 
+    const todayRevenue = await this.ordersRepo
+      .createQueryBuilder('o')
+      .select('COALESCE(SUM(o.total), 0)', 'total')
+      .where('o.status != :cancelled', { cancelled: OrderStatus.CANCELLED })
+      .andWhere('o.created_at >= :start', { start: startOfToday })
+      .getRawOne();
+
+    const totalOrders = await this.ordersRepo.count();
+    const pendingOrders = await this.ordersRepo.count({ where: { status: OrderStatus.PENDING } });
+    const totalUsers = await this.usersRepo.count();
+    const inactiveProducts = await this.productsRepo.count({ where: { isActive: false } });
+    const lowStockProducts = await this.productsRepo.count({
+      where: { isActive: true, stock: LessThan(10) },
+    });
+    const featuredProducts = await this.productsRepo.count({ where: { isFeatured: true } });
+
+    const statusRows = await this.ordersRepo
+      .createQueryBuilder('o')
+      .select('o.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('o.status')
+      .getRawMany();
+
+    const ordersByStatus: Record<string, number> = {};
+    for (const row of statusRows) {
+      ordersByStatus[row.status] = Number(row.count);
+    }
+
     return {
       month_revenue: Number(monthRevenue.total),
+      today_revenue: Number(todayRevenue.total),
       today_orders: todayOrders,
       active_products: activeProducts,
+      inactive_products: inactiveProducts,
+      featured_products: featuredProducts,
+      low_stock_products: lowStockProducts,
       new_users_week: newUsers,
+      total_orders: totalOrders,
+      pending_orders: pendingOrders,
+      total_users: totalUsers,
+      orders_by_status: ordersByStatus,
     };
+  }
+
+  async lowStock(limit = 10) {
+    const items = await this.productsRepo.find({
+      where: { isActive: true, stock: LessThan(10) },
+      order: { stock: 'ASC' },
+      take: limit,
+    });
+    return items.map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      brand: p.brand,
+      stock: p.stock,
+      thumbnail_url: p.thumbnailUrl,
+      price: Number(p.price),
+    }));
   }
 
   async revenue(period = '30d') {
