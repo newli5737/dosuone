@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { Product, ProductImage, ProductSpec, Review } from '../entities';
+import { Brand, Product, ProductImage, ProductSpec, Review } from '../entities';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { paginate, paginationMeta } from '../common/utils/pagination.util';
 import { CreateProductDto, ProductQueryDto, UpdateProductDto } from './dto/product.dto';
@@ -10,37 +10,87 @@ import { CreateProductDto, ProductQueryDto, UpdateProductDto } from './dto/produ
 export class ProductsService {
   constructor(
     @InjectRepository(Product) private productsRepo: Repository<Product>,
+    @InjectRepository(Brand) private brandsRepo: Repository<Brand>,
     @InjectRepository(ProductImage) private imagesRepo: Repository<ProductImage>,
     @InjectRepository(ProductSpec) private specsRepo: Repository<ProductSpec>,
     @InjectRepository(Review) private reviewsRepo: Repository<Review>,
     private cloudinary: CloudinaryService,
   ) {}
 
-  private mapProduct(p: Product) {
-    const { brand: brandRel, ...rest } = p;
+  private toProductDto(p: Product, brandName: string | null = null) {
     return {
-      ...rest,
-      brand: brandRel?.name ?? null,
+      id: p.id,
+      category_id: p.categoryId,
       brand_id: p.brandId,
+      name: p.name,
+      slug: p.slug,
+      description: p.description ?? null,
+      price: Number(p.price),
+      sale_price: p.salePrice != null ? Number(p.salePrice) : null,
+      stock: p.stock,
+      brand: brandName,
+      thumbnail_url: p.thumbnailUrl ?? null,
+      thumbnail_public_id: p.thumbnailPublicId ?? null,
+      is_featured: p.isFeatured,
+      is_active: p.isActive,
+      avg_rating: Number(p.avgRating),
+      review_count: p.reviewCount,
+      created_at: p.createdAt,
+      updated_at: p.updatedAt,
     };
+  }
+
+  private mapImages(images: ProductImage[] | undefined) {
+    return (images ?? []).map((img) => ({
+      id: img.id,
+      image_url: img.imageUrl,
+      cloudinary_public_id: img.cloudinaryPublicId,
+      sort_order: img.sortOrder,
+      is_primary: img.isPrimary,
+    }));
+  }
+
+  private mapSpecs(specs: ProductSpec[] | undefined) {
+    return (specs ?? []).map((s) => ({
+      id: s.id,
+      spec_key: s.specKey,
+      spec_value: s.specValue,
+      sort_order: s.sortOrder,
+    }));
+  }
+
+  private async brandNameMap(ids: (string | null | undefined)[]) {
+    const unique = [...new Set(ids.filter((id): id is string => Boolean(id)))];
+    const map = new Map<string, string>();
+    if (!unique.length) return map;
+    try {
+      const rows = await this.brandsRepo.find({ where: { id: In(unique) } });
+      for (const b of rows) map.set(b.id, b.name);
+    } catch {
+      /* bảng brands chưa sync — bỏ qua */
+    }
+    return map;
   }
 
   async findAll(query: ProductQueryDto) {
     const { skip, take, page, limit } = paginate(query.page, query.limit);
-    const qb = this.productsRepo
-      .createQueryBuilder('p')
-      .leftJoinAndSelect('p.brand', 'brand');
+    const qb = this.productsRepo.createQueryBuilder('p');
+
     if (!query.include_inactive) {
-      qb.where('p.is_active = true');
+      qb.where('p.is_active = :active', { active: true });
     }
 
     if (query.category_id) qb.andWhere('p.category_id = :cid', { cid: query.category_id });
     if (query.brand_id) qb.andWhere('p.brand_id = :bid', { bid: query.brand_id });
     if (query.search) {
-      qb.andWhere('(p.name ILIKE :s OR brand.name ILIKE :s)', { s: `%${query.search}%` });
+      qb.andWhere('p.name ILIKE :s', { s: `%${query.search}%` });
     }
-    if (query.min_price) qb.andWhere('COALESCE(p.sale_price, p.price) >= :min', { min: query.min_price });
-    if (query.max_price) qb.andWhere('COALESCE(p.sale_price, p.price) <= :max', { max: query.max_price });
+    if (query.min_price) {
+      qb.andWhere('COALESCE(p.sale_price, p.price) >= :min', { min: query.min_price });
+    }
+    if (query.max_price) {
+      qb.andWhere('COALESCE(p.sale_price, p.price) <= :max', { max: query.max_price });
+    }
 
     switch (query.sort) {
       case 'price_asc':
@@ -57,40 +107,67 @@ export class ProductsService {
     }
 
     const [rows, total] = await qb.skip(skip).take(take).getManyAndCount();
-    return { data: rows.map((p) => this.mapProduct(p)), meta: paginationMeta(page, limit, total) };
+    const bmap = await this.brandNameMap(rows.map((r) => r.brandId));
+
+    return {
+      data: rows.map((p) =>
+        this.toProductDto(p, p.brandId ? (bmap.get(p.brandId) ?? null) : null),
+      ),
+      meta: paginationMeta(page, limit, total),
+    };
   }
 
   async findFeatured() {
     const rows = await this.productsRepo.find({
       where: { isFeatured: true, isActive: true },
-      relations: { brand: true },
       order: { createdAt: 'DESC' },
       take: 20,
     });
-    return rows.map((p) => this.mapProduct(p));
+    const bmap = await this.brandNameMap(rows.map((r) => r.brandId));
+    return rows.map((p) =>
+      this.toProductDto(p, p.brandId ? (bmap.get(p.brandId) ?? null) : null),
+    );
   }
 
   async findBySlug(slug: string) {
     const product = await this.productsRepo.findOne({
       where: { slug, isActive: true },
-      relations: { category: true, brand: true, images: true, specs: true },
+      relations: { images: true, specs: true },
       order: {
         images: { sortOrder: 'ASC' },
         specs: { sortOrder: 'ASC' },
       } as never,
     });
     if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
-    return this.mapProduct(product);
+    const bmap = await this.brandNameMap([product.brandId]);
+    return {
+      ...this.toProductDto(
+        product,
+        product.brandId ? (bmap.get(product.brandId) ?? null) : null,
+      ),
+      images: this.mapImages(product.images),
+      specs: this.mapSpecs(product.specs),
+    };
   }
 
   async findByIdAdmin(id: string) {
     const product = await this.productsRepo.findOne({
       where: { id },
-      relations: { images: true, category: true, brand: true },
+      relations: { images: true, category: true },
       order: { images: { sortOrder: 'ASC' } } as never,
     });
     if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
-    return this.mapProduct(product);
+    const bmap = await this.brandNameMap([product.brandId]);
+    return {
+      ...this.toProductDto(
+        product,
+        product.brandId ? (bmap.get(product.brandId) ?? null) : null,
+      ),
+      images: this.mapImages(product.images),
+      category: product.category
+        ? { id: product.category.id, name: product.category.name, slug: product.category.slug }
+        : null,
+    };
   }
 
   async getReviews(productId: string, page = 1, limit = 20) {
@@ -106,7 +183,10 @@ export class ProductsService {
     });
     return {
       data: data.map((r) => ({
-        ...r,
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment,
+        created_at: r.createdAt,
         user: r.user
           ? { id: r.user.id, full_name: r.user.fullName, avatar_url: r.user.avatarUrl }
           : null,
@@ -115,7 +195,11 @@ export class ProductsService {
     };
   }
 
-  private resolveThumbnail(dto: { thumbnail_url?: string; thumbnail_public_id?: string; images?: { image_url: string; public_id?: string; is_primary?: boolean }[] }) {
+  private resolveThumbnail(dto: {
+    thumbnail_url?: string;
+    thumbnail_public_id?: string;
+    images?: { image_url: string; public_id?: string; is_primary?: boolean }[];
+  }) {
     if (dto.thumbnail_url) {
       return { url: dto.thumbnail_url, publicId: dto.thumbnail_public_id };
     }

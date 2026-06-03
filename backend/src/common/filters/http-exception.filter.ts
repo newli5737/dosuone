@@ -24,6 +24,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
           ? res
           : (res as { message?: string | string[] }).message?.toString() ||
             exception.message;
+    } else if (exception instanceof Error) {
+      console.error('[API]', exception.message, exception.stack);
     }
 
     response.status(status).json({

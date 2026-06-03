@@ -12,10 +12,12 @@ export function paginate(page = 1, limit = 20): { skip: number; take: number; pa
 }
 
 export function paginationMeta(page: number, limit: number, total: number): PaginationMeta {
+  const totalPages = Math.ceil(total / limit) || 1;
   return {
     page,
     limit,
     total,
-    totalPages: Math.ceil(total / limit) || 1,
-  };
+    totalPages,
+    total_pages: totalPages,
+  } as PaginationMeta & { total_pages: number };
 }
