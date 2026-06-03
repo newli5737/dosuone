@@ -21,11 +21,25 @@ Hoặc một lệnh:
 bash deploy/pull.sh && bash deploy/fix-vps.sh
 ```
 
-## Cert api-one (khi cần HTTPS subdomain riêng)
+## Cert + redirect api-one.dosutech.site
 
 ```bash
+cd /home/dosuone
+git pull
+chmod +x deploy/certbot-api-one.sh
+bash deploy/certbot-api-one.sh admin@dosutech.site
+```
+
+Hoặc từng bước:
+
+```bash
+sudo cp /home/dosuone/deploy/nginx/api-one.dosutech.site.conf /etc/nginx/sites-available/
+sudo ln -sf /etc/nginx/sites-available/api-one.dosutech.site.conf /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
 sudo certbot certonly --nginx -d api-one.dosutech.site
-bash deploy/enable-https.sh
+sudo cp /home/dosuone/deploy/nginx/api-one.dosutech.site.ssl.conf /etc/nginx/sites-available/api-one.dosutech.site.conf
+sudo sed -i '/http2/d' /etc/nginx/sites-available/api-one.dosutech.site.conf
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
 ## Tài khoản
