@@ -59,14 +59,35 @@ export class CategoriesService {
   async remove(id: string) {
     const cat = await this.repo.findOne({ where: { id } });
     if (!cat) throw new NotFoundException('Danh mục không tồn tại');
+
     const linked = await this.productsRepo.count({ where: { categoryId: id } });
+    let moved = 0;
+    let fallbackName = '';
     if (linked > 0) {
-      throw new BadRequestException(
-        `Không xóa được: còn ${linked} sản phẩm thuộc danh mục "${cat.name}". Chuyển sang danh mục khác hoặc xóa sản phẩm trước.`,
+      const fallback =
+        (await this.repo.findOne({ where: { slug: 'dien-thoai', isActive: true } })) ??
+        (await this.repo.findOne({ where: { isActive: true }, order: { name: 'ASC' } }));
+      if (!fallback || fallback.id === id) {
+        throw new BadRequestException(
+          `Còn ${linked} sản phẩm gắn danh mục này. Tạo danh mục "Điện thoại" (dien-thoai) hoặc xóa/chuyển sản phẩm trước.`,
+        );
+      }
+      fallbackName = fallback.name;
+      const result = await this.productsRepo.update(
+        { categoryId: id },
+        { categoryId: fallback.id },
       );
+      moved = result.affected ?? linked;
     }
+
     if (cat.imagePublicId) await this.cloudinary.destroy(cat.imagePublicId);
     await this.repo.remove(cat);
-    return { message: 'Đã xóa danh mục' };
+    return {
+      message:
+        moved > 0
+          ? `Đã xóa danh mục. ${moved} sản phẩm chuyển sang "${fallbackName}".`
+          : 'Đã xóa danh mục',
+      moved_products: moved,
+    };
   }
 }
