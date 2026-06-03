@@ -4,8 +4,8 @@ set -euo pipefail
 ROOT="/home/dosuone"
 cd "$ROOT"
 
-git stash push -m "vps-local" deploy/setup-vps.sh 2>/dev/null || true
-git pull
+git checkout -- deploy/setup-vps.sh 2>/dev/null || true
+git pull --ff-only
 
 if [ -f "$ROOT/backend/.env" ]; then
   if grep -q '^CORS_ORIGINS=' "$ROOT/backend/.env"; then
