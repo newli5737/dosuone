@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="/home/dosuone"
 cd "$ROOT"
 
-git checkout -- deploy/setup-vps.sh 2>/dev/null || true
+git checkout -- deploy/ 2>/dev/null || true
 git pull --ff-only
 
 if [ -f "$ROOT/backend/.env" ]; then

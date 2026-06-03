@@ -24,8 +24,8 @@ server {
 }
 
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
+    listen 443 ssl;
+    listen [::]:443 ssl;
     server_name api-one.dosutech.site;
 
     ssl_certificate     /etc/letsencrypt/live/api-one.dosutech.site/fullchain.pem;
