@@ -1,0 +1,71 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import {
+  Address,
+  CartItem,
+  Category,
+  Notification,
+  Order,
+  OrderItem,
+  Product,
+  ProductImage,
+  ProductSpec,
+  Review,
+  User,
+  Wishlist,
+} from './entities';
+import { AuthModule } from './auth/auth.module';
+import { CategoriesModule } from './categories/categories.module';
+import { ProductsModule } from './products/products.module';
+import { CartModule } from './cart/cart.module';
+import { OrdersModule } from './orders/orders.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { WishlistModule } from './wishlist/wishlist.module';
+import { AddressesModule } from './addresses/addresses.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { AdminModule } from './admin/admin.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        type: 'postgres',
+        host: config.get('DB_HOST'),
+        port: +config.get('DB_PORT'),
+        username: config.get('DB_USER'),
+        password: config.get('DB_PASSWORD'),
+        database: config.get('DB_NAME'),
+        entities: [
+          User,
+          Category,
+          Product,
+          ProductImage,
+          ProductSpec,
+          Address,
+          Order,
+          OrderItem,
+          CartItem,
+          Review,
+          Wishlist,
+          Notification,
+        ],
+        synchronize: true,
+      }),
+    }),
+    AuthModule,
+    CategoriesModule,
+    ProductsModule,
+    CartModule,
+    OrdersModule,
+    ReviewsModule,
+    WishlistModule,
+    AddressesModule,
+    NotificationsModule,
+    AdminModule,
+  ],
+})
+export class AppModule {}
