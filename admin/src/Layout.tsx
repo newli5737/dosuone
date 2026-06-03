@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 const nav = [
   { to: '/admin', label: 'Tổng quan', icon: '◉', end: true },
+  { to: '/admin/categories', label: 'Danh mục', icon: '▦' },
   { to: '/admin/products', label: 'Sản phẩm', icon: '▣' },
   { to: '/admin/orders', label: 'Đơn hàng', icon: '◎' },
   { to: '/admin/users', label: 'Người dùng', icon: '◇' },

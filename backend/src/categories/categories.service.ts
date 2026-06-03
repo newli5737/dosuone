@@ -8,8 +8,11 @@ import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 export class CategoriesService {
   constructor(@InjectRepository(Category) private repo: Repository<Category>) {}
 
-  findAll() {
-    return this.repo.find({ where: { isActive: true }, order: { name: 'ASC' } });
+  findAll(includeInactive = false) {
+    return this.repo.find({
+      where: includeInactive ? {} : { isActive: true },
+      order: { name: 'ASC' },
+    });
   }
 
   async findBySlug(slug: string) {

@@ -8,7 +8,7 @@ import {
   IsUUID,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 class ProductImageDto {
   @IsString()
@@ -49,14 +49,17 @@ export class CreateProductDto {
   @IsString()
   description?: string;
 
+  @Type(() => Number)
   @IsNumber()
   price: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   sale_price?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   stock?: number;
 
@@ -103,14 +106,17 @@ export class UpdateProductDto {
   description?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   price?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   sale_price?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   stock?: number;
 
@@ -161,4 +167,9 @@ export class ProductQueryDto {
   @IsOptional()
   @IsIn(['price_asc', 'price_desc', 'newest', 'rating'])
   sort?: 'price_asc' | 'price_desc' | 'newest' | 'rating';
+
+  /** Admin: lấy cả sản phẩm đã ẩn */
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true' || value === '1')
+  include_inactive?: boolean;
 }

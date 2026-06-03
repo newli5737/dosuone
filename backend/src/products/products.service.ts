@@ -16,9 +16,10 @@ export class ProductsService {
 
   async findAll(query: ProductQueryDto) {
     const { skip, take, page, limit } = paginate(query.page, query.limit);
-    const qb = this.productsRepo
-      .createQueryBuilder('p')
-      .where('p.is_active = true');
+    const qb = this.productsRepo.createQueryBuilder('p');
+    if (!query.include_inactive) {
+      qb.where('p.is_active = true');
+    }
 
     if (query.category_id) qb.andWhere('p.category_id = :cid', { cid: query.category_id });
     if (query.search) {

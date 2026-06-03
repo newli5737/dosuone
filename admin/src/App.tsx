@@ -3,6 +3,7 @@ import Layout from './Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
+import Categories from './pages/Categories';
 import Orders from './pages/Orders';
 import Users from './pages/Users';
 import BankAccounts from './pages/BankAccounts';
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/" element={<Login />} />
         <Route path="/admin" element={<PrivateRoute><Layout /></PrivateRoute>}>
           <Route index element={<Dashboard />} />
+          <Route path="categories" element={<Categories />} />
           <Route path="products" element={<Products />} />
           <Route path="orders" element={<Orders />} />
           <Route path="users" element={<Users />} />

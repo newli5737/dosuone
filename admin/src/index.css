@@ -559,6 +559,34 @@ button {
   gap: 6px;
 }
 
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.form-span-2 {
+  grid-column: span 2;
+}
+.textarea {
+  resize: vertical;
+  min-height: 88px;
+}
+.form-preview-img {
+  max-height: 120px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #f8fafc;
+}
+
+@media (max-width: 700px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-span-2 {
+    grid-column: span 1;
+  }
+}
+
 .dashboard-row {
   display: grid;
   grid-template-columns: 1fr 320px;
