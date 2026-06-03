@@ -15,6 +15,10 @@ class ProductImageDto {
   image_url: string;
 
   @IsOptional()
+  @IsString()
+  public_id?: string;
+
+  @IsOptional()
   @IsNumber()
   sort_order?: number;
 
@@ -70,6 +74,10 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   thumbnail_url?: string;
+
+  @IsOptional()
+  @IsString()
+  thumbnail_public_id?: string;
 
   @IsOptional()
   @IsBoolean()
@@ -129,12 +137,27 @@ export class UpdateProductDto {
   thumbnail_url?: string;
 
   @IsOptional()
+  @IsString()
+  thumbnail_public_id?: string;
+
+  @IsOptional()
   @IsBoolean()
   is_featured?: boolean;
 
   @IsOptional()
   @IsBoolean()
   is_active?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductImageDto)
+  images?: ProductImageDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  delete_public_ids?: string[];
 }
 
 export class ProductQueryDto {

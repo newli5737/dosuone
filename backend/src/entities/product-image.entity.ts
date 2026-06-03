@@ -22,6 +22,9 @@ export class ProductImage {
   @Column({ name: 'image_url', type: 'text' })
   imageUrl: string;
 
+  @Column({ name: 'cloudinary_public_id', nullable: true })
+  cloudinaryPublicId: string;
+
   @Column({ name: 'sort_order', default: 0 })
   sortOrder: number;
 

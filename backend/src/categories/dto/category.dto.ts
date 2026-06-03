@@ -10,6 +10,10 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsString()
   image_url?: string;
+
+  @IsOptional()
+  @IsString()
+  image_public_id?: string;
 }
 
 export class UpdateCategoryDto {
@@ -26,6 +30,14 @@ export class UpdateCategoryDto {
   image_url?: string;
 
   @IsOptional()
+  @IsString()
+  image_public_id?: string;
+
+  @IsOptional()
   @IsBoolean()
   is_active?: boolean;
+
+  @IsOptional()
+  @IsString()
+  delete_image_public_id?: string;
 }

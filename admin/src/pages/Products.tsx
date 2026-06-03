@@ -4,7 +4,8 @@ import PageHeader from '../components/PageHeader';
 import StatCard from '../components/StatCard';
 import Modal from '../components/Modal';
 import Loading from '../components/Loading';
-import { field, formatVnd, unwrapList, unwrapPaginated } from '../utils/format';
+import ImageUploader, { type UploadItem } from '../components/ImageUploader';
+import { field, formatVnd, unwrapData, unwrapList, unwrapPaginated } from '../utils/format';
 import { slugify } from '../utils/slug';
 
 type Filter = 'all' | 'active' | 'inactive' | 'featured' | 'low_stock' | 'on_sale';
@@ -18,7 +19,6 @@ const emptyProductForm = {
   sale_price: '',
   stock: '0',
   brand: '',
-  thumbnail_url: '',
   is_featured: false,
   is_active: true,
 };
@@ -35,6 +35,7 @@ export default function Products() {
   const [form, setForm] = useState(emptyProductForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [gallery, setGallery] = useState<UploadItem[]>([]);
 
   const load = () => {
     setLoading(true);
@@ -107,32 +108,68 @@ export default function Products() {
       ...emptyProductForm,
       category_id: categories[0] ? String(categories[0].id) : '',
     });
+    setGallery([]);
     setError('');
     setModalOpen(true);
   };
 
-  const openEdit = (p: Record<string, unknown>) => {
-    setEditingId(String(p.id));
-    setForm({
-      category_id: String(p.category_id ?? p.categoryId ?? ''),
-      name: String(p.name ?? ''),
-      slug: String(p.slug ?? ''),
-      description: String(p.description ?? ''),
-      price: String(p.price ?? ''),
-      sale_price: field(p, 'sale_price', 'salePrice') != null ? String(field(p, 'sale_price', 'salePrice')) : '',
-      stock: String(p.stock ?? 0),
-      brand: String(p.brand ?? ''),
-      thumbnail_url: String(field(p, 'thumbnail_url', 'thumbnailUrl') ?? ''),
-      is_featured: Boolean(p.is_featured ?? p.isFeatured),
-      is_active: Boolean(p.is_active ?? p.isActive ?? true),
-    });
+  const mapGallery = (data: Record<string, unknown>): UploadItem[] => {
+    const images = (data.images as Record<string, unknown>[]) ?? [];
+    if (images.length) {
+      return [...images]
+        .sort((a, b) => Number(a.sort_order ?? a.sortOrder ?? 0) - Number(b.sort_order ?? b.sortOrder ?? 0))
+        .map((img, i) => ({
+          url: String(img.image_url ?? img.imageUrl ?? ''),
+          public_id: String(img.cloudinary_public_id ?? img.cloudinaryPublicId ?? ''),
+          localKey: String(img.id ?? `img-${i}`),
+        }))
+        .filter((x) => x.url);
+    }
+    const thumb = field<string>(data, 'thumbnail_url', 'thumbnailUrl');
+    if (thumb) {
+      return [{
+        url: thumb,
+        public_id: String(field(data, 'thumbnail_public_id', 'thumbnailPublicId') ?? ''),
+        localKey: 'thumb',
+      }];
+    }
+    return [];
+  };
+
+  const openEdit = async (p: Record<string, unknown>) => {
+    const id = String(p.id);
+    setEditingId(id);
     setError('');
     setModalOpen(true);
+    try {
+      const res = await api.get(`/products/manage/${id}`);
+      const data = unwrapData(res) as Record<string, unknown>;
+      setForm({
+        category_id: String(data.category_id ?? data.categoryId ?? ''),
+        name: String(data.name ?? ''),
+        slug: String(data.slug ?? ''),
+        description: String(data.description ?? ''),
+        price: String(data.price ?? ''),
+        sale_price: field(data, 'sale_price', 'salePrice') != null ? String(field(data, 'sale_price', 'salePrice')) : '',
+        stock: String(data.stock ?? 0),
+        brand: String(data.brand ?? ''),
+        is_featured: Boolean(data.is_featured ?? data.isFeatured),
+        is_active: Boolean(data.is_active ?? data.isActive ?? true),
+      });
+      setGallery(mapGallery(data));
+    } catch {
+      setError('Không tải chi tiết sản phẩm');
+      setGallery([]);
+    }
   };
 
   const save = async () => {
     if (!form.category_id || !form.name.trim() || !form.slug.trim() || !form.price) {
       setError('Chọn danh mục, nhập tên, slug và giá');
+      return;
+    }
+    if (gallery.length === 0) {
+      setError('Tải ít nhất 1 ảnh sản phẩm');
       return;
     }
     setSaving(true);
@@ -146,8 +183,15 @@ export default function Products() {
         price: Number(form.price),
         stock: Number(form.stock) || 0,
         brand: form.brand.trim() || undefined,
-        thumbnail_url: form.thumbnail_url.trim() || undefined,
         is_featured: form.is_featured,
+        thumbnail_url: gallery[0].url,
+        thumbnail_public_id: gallery[0].public_id || undefined,
+        images: gallery.map((img, i) => ({
+          image_url: img.url,
+          public_id: img.public_id || undefined,
+          sort_order: i,
+          is_primary: i === 0,
+        })),
       };
       if (form.sale_price !== '') body.sale_price = Number(form.sale_price);
       if (editingId) {
@@ -372,19 +416,14 @@ export default function Products() {
               onChange={(e) => setForm({ ...form, stock: e.target.value })}
             />
           </label>
-          <label className="form-span-2">
-            URL ảnh thumbnail
-            <input
-              className="input input-block"
-              value={form.thumbnail_url}
-              onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })}
+          <div className="form-span-2">
+            <ImageUploader
+              label="Ảnh sản phẩm (Cloudinary) — ảnh đầu là ảnh bìa"
+              multiple
+              value={gallery}
+              onChange={setGallery}
             />
-          </label>
-          {form.thumbnail_url && (
-            <div className="form-span-2">
-              <img src={form.thumbnail_url} alt="" className="form-preview-img" />
-            </div>
-          )}
+          </div>
           <label className="form-span-2">
             Mô tả
             <textarea

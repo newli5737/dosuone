@@ -49,6 +49,9 @@ export class Product {
   @Column({ name: 'thumbnail_url', nullable: true, type: 'text' })
   thumbnailUrl: string;
 
+  @Column({ name: 'thumbnail_public_id', nullable: true })
+  thumbnailPublicId: string;
+
   @Column({ name: 'is_featured', default: false })
   isFeatured: boolean;
 

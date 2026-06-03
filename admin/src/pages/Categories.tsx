@@ -3,13 +3,13 @@ import api from '../api';
 import PageHeader from '../components/PageHeader';
 import Modal from '../components/Modal';
 import Loading from '../components/Loading';
+import ImageUploader, { type UploadItem } from '../components/ImageUploader';
 import { field, unwrapList } from '../utils/format';
 import { slugify } from '../utils/slug';
 
 const emptyForm = {
   name: '',
   slug: '',
-  image_url: '',
   is_active: true,
 };
 
@@ -22,6 +22,8 @@ export default function Categories() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [gallery, setGallery] = useState<UploadItem[]>([]);
+  const [prevImagePublicId, setPrevImagePublicId] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -47,18 +49,23 @@ export default function Categories() {
   const openCreate = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setGallery([]);
+    setPrevImagePublicId('');
     setError('');
     setModalOpen(true);
   };
 
   const openEdit = (row: Record<string, unknown>) => {
     setEditingId(String(row.id));
+    const url = String(field(row, 'image_url', 'imageUrl') ?? '');
+    const pid = String(field(row, 'image_public_id', 'imagePublicId') ?? '');
     setForm({
       name: String(row.name ?? ''),
       slug: String(row.slug ?? ''),
-      image_url: String(field(row, 'image_url', 'imageUrl') ?? ''),
       is_active: Boolean(row.is_active ?? row.isActive ?? true),
     });
+    setGallery(url ? [{ url, public_id: pid, localKey: pid || url }] : []);
+    setPrevImagePublicId(pid);
     setError('');
     setModalOpen(true);
   };
@@ -71,12 +78,17 @@ export default function Categories() {
     setSaving(true);
     setError('');
     try {
-      const body = {
+      const img = gallery[0];
+      const body: Record<string, unknown> = {
         name: form.name.trim(),
         slug: form.slug.trim(),
-        image_url: form.image_url.trim() || undefined,
+        image_url: img?.url,
+        image_public_id: img?.public_id || undefined,
         ...(editingId ? { is_active: form.is_active } : {}),
       };
+      if (editingId && prevImagePublicId && img?.public_id !== prevImagePublicId) {
+        body.delete_image_public_id = prevImagePublicId;
+      }
       if (editingId) {
         await api.patch(`/categories/${editingId}`, body);
       } else {
@@ -210,15 +222,11 @@ export default function Categories() {
               onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })}
             />
           </label>
-          <label>
-            URL ảnh
-            <input
-              className="input input-block"
-              value={form.image_url}
-              onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-              placeholder="https://..."
-            />
-          </label>
+          <ImageUploader
+            label="Ảnh danh mục (Cloudinary)"
+            value={gallery}
+            onChange={setGallery}
+          />
           {editingId && (
             <label className="checkbox-row">
               <input

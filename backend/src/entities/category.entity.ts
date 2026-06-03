@@ -22,6 +22,9 @@ export class Category {
   @Column({ name: 'image_url', nullable: true, type: 'text' })
   imageUrl: string;
 
+  @Column({ name: 'image_public_id', nullable: true })
+  imagePublicId: string;
+
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 

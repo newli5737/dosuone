@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { IsBoolean } from 'class-validator';
+import { IsArray, IsBoolean, IsString } from 'class-validator';
 import { BankAccountsService } from '../bank-accounts/bank-accounts.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateBankAccountDto, UpdateBankAccountDto } from '../bank-accounts/dto/bank-account.dto';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -13,6 +14,12 @@ class UserStatusDto {
   is_active: boolean;
 }
 
+class DeleteCloudinaryDto {
+  @IsArray()
+  @IsString({ each: true })
+  public_ids: string[];
+}
+
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
@@ -20,7 +27,18 @@ export class AdminController {
   constructor(
     private service: AdminService,
     private bankAccounts: BankAccountsService,
+    private cloudinary: CloudinaryService,
   ) {}
+
+  @Get('upload/config')
+  uploadConfig() {
+    return this.cloudinary.getPublicConfig();
+  }
+
+  @Post('cloudinary/delete')
+  deleteCloudinary(@Body() dto: DeleteCloudinaryDto) {
+    return this.cloudinary.destroyMany(dto.public_ids);
+  }
 
   @Get('stats/overview')
   overview() {

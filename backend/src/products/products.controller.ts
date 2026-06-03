@@ -30,6 +30,13 @@ export class ProductsController {
     return this.service.findFeatured();
   }
 
+  @Get('manage/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  findByIdAdmin(@Param('id') id: string) {
+    return this.service.findByIdAdmin(id);
+  }
+
   @Get(':slug')
   findBySlug(@Param('slug') slug: string) {
     return this.service.findBySlug(slug);
