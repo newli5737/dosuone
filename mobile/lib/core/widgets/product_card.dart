@@ -25,104 +25,92 @@ class ProductCard extends StatelessWidget {
         final w = constraints.maxWidth;
         final h = constraints.maxHeight;
         final bounded = h.isFinite && h > 0;
-        final imageH = bounded ? h * 0.45 : w * 0.85; 
-        final info = _CardInfo(
-          brand: p['brand']?.toString(),
-          name: p['name']?.toString() ?? '',
-          price: price,
-          originalPrice: original,
-          rating: rating,
-          reviews: reviews is int ? reviews : int.tryParse('$reviews') ?? 0,
-          expandName: bounded,
-        );
-
-        final imageBlock = SizedBox(
-          height: imageH,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                child: AppNetworkImage(url: thumb, fit: BoxFit.cover),
-              ),
-              if (hasSale)
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: AppColors.gradientWarm,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.sale.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      child: Text(
-                        'SALE',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-
-        final contentBlock = Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-          child: info,
-        );
 
         return Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             child: Ink(
               width: w,
               height: bounded ? h : null,
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.cardBorder, width: 1.5),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.cardBorder, width: 1),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.primary.withValues(alpha: 0.04),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: Stack(
                 children: [
-                  bounded
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [imageBlock, Expanded(child: contentBlock)],
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: bounded ? MainAxisSize.max : MainAxisSize.min,
+                    children: [
+                      // Hình ảnh tự co giãn để nhường chỗ cho Text
+                      if (bounded)
+                        Expanded(
+                          child: _buildImage(thumb),
                         )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [imageBlock, contentBlock],
+                      else
+                        AspectRatio(
+                          aspectRatio: 1,
+                          child: _buildImage(thumb),
                         ),
+                      
+                      // Nội dung cố định chiều cao theo lượng text
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                        child: _CardInfo(
+                          brand: p['brand']?.toString(),
+                          name: p['name']?.toString() ?? '',
+                          price: price,
+                          originalPrice: original,
+                          rating: rating,
+                          reviews: reviews is int ? reviews : int.tryParse('$reviews') ?? 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  // Sale Badge
+                  if (hasSale)
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: AppColors.gradientWarm,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          child: Text(
+                            'SALE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                  // Nút giỏ hàng (FAB)
                   Positioned(
                     bottom: 12,
                     right: 12,
                     child: Container(
                       width: 32,
                       height: 32,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AppColors.primaryLight,
                         shape: BoxShape.circle,
                       ),
@@ -141,6 +129,13 @@ class ProductCard extends StatelessWidget {
       },
     );
   }
+
+  Widget _buildImage(String thumb) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      child: AppNetworkImage(url: thumb, fit: BoxFit.cover),
+    );
+  }
 }
 
 class _CardInfo extends StatelessWidget {
@@ -151,7 +146,6 @@ class _CardInfo extends StatelessWidget {
     this.originalPrice,
     required this.rating,
     required this.reviews,
-    this.expandName = false,
   });
 
   final String? brand;
@@ -160,22 +154,9 @@ class _CardInfo extends StatelessWidget {
   final dynamic originalPrice;
   final double rating;
   final int reviews;
-  final bool expandName;
 
   @override
   Widget build(BuildContext context) {
-    final nameWidget = Text(
-      name,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
-        height: 1.3,
-        color: AppColors.textPrimary,
-      ),
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -193,12 +174,22 @@ class _CardInfo extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 4),
-        if (expandName) Expanded(child: nameWidget) else nameWidget,
-        const SizedBox(height: 8),
+        Text(
+          name,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            height: 1.3,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
         PriceTag(price: price, originalPrice: originalPrice, compact: true),
         if (rating > 0)
           Padding(
-            padding: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.only(top: 4),
             child: Row(
               children: [
                 const Icon(Icons.star_rounded, size: 14, color: AppColors.accent),
