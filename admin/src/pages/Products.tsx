@@ -6,7 +6,8 @@ import Modal from '../components/Modal';
 import Loading from '../components/Loading';
 import ImageUploader, { type UploadItem } from '../components/ImageUploader';
 import axios from 'axios';
-import { field, formatVnd, parseNumberInput, unwrapData, unwrapList, unwrapPaginated } from '../utils/format';
+import { useNotify } from '../context/NotifyContext';
+import { apiErrorMessage, field, formatVnd, parseNumberInput, unwrapData, unwrapList, unwrapPaginated } from '../utils/format';
 import { slugify } from '../utils/slug';
 
 type Filter = 'all' | 'active' | 'inactive' | 'featured' | 'low_stock' | 'on_sale';
@@ -25,10 +26,12 @@ const emptyProductForm = {
 };
 
 export default function Products() {
+  const { confirm, toast } = useNotify();
   const [products, setProducts] = useState<Record<string, unknown>[]>([]);
   const [categories, setCategories] = useState<Record<string, unknown>[]>([]);
   const [brandsList, setBrandsList] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [brandFilter, setBrandFilter] = useState('');
@@ -41,8 +44,9 @@ export default function Products() {
 
   const load = () => {
     setLoading(true);
+    setLoadError('');
     Promise.all([
-      api.get('/products', { params: { limit: 500, include_inactive: true } }),
+      api.get('/products', { params: { limit: 500, include_inactive: 'true' } }),
       api.get('/categories', { params: { all: '1' } }),
       api.get('/brands', { params: { all: '1' } }),
     ])
@@ -51,6 +55,11 @@ export default function Products() {
         setProducts(data);
         setCategories(unwrapList(c) as Record<string, unknown>[]);
         setBrandsList(unwrapList(b) as Record<string, unknown>[]);
+      })
+      .catch((e: unknown) => {
+        setProducts([]);
+        setLoadError(apiErrorMessage(e, 'Không tải được danh sách sản phẩm'));
+        toast(apiErrorMessage(e, 'Không tải được sản phẩm'), 'error');
       })
       .finally(() => setLoading(false));
   };
@@ -228,12 +237,19 @@ export default function Products() {
   };
 
   const remove = async (id: string, name: string) => {
-    if (!confirm(`Xóa sản phẩm "${name}"?`)) return;
+    const ok = await confirm({
+      title: 'Xóa sản phẩm',
+      message: `Xóa "${name}"? Hành động không hoàn tác.`,
+      confirmLabel: 'Xóa',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await api.delete(`/products/${id}`);
+      toast('Đã xóa sản phẩm', 'success');
       load();
-    } catch {
-      alert('Không xóa được sản phẩm');
+    } catch (e: unknown) {
+      toast(apiErrorMessage(e, 'Không xóa được sản phẩm'), 'error');
     }
   };
 
@@ -241,6 +257,13 @@ export default function Products() {
 
   return (
     <div>
+      {loadError && <div className="banner-warn">{loadError}</div>}
+      {!loadError && products.length === 0 && !loading && (
+        <div className="banner-warn">
+          Chưa có sản phẩm trong database. Trên VPS chạy: <code>cd backend && npm run seed:refresh</code>
+        </div>
+      )}
+
       <PageHeader
         title="Quản lý sản phẩm"
         subtitle={`${filtered.length}/${products.length} sản phẩm`}

@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { NotifyProvider } from './context/NotifyContext';
 
 const nav = [
   { to: '/admin', label: 'Tổng quan', icon: '◉', end: true },
@@ -17,6 +18,7 @@ export default function Layout() {
   const email = localStorage.getItem('admin_email');
 
   return (
+    <NotifyProvider>
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-brand">
@@ -54,5 +56,6 @@ export default function Layout() {
         <Outlet />
       </main>
     </div>
+    </NotifyProvider>
   );
 }

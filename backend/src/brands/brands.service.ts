@@ -1,12 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Brand } from '../entities';
+import { Brand, Product } from '../entities';
 import { CreateBrandDto, UpdateBrandDto } from './dto/brand.dto';
 
 @Injectable()
 export class BrandsService {
-  constructor(@InjectRepository(Brand) private repo: Repository<Brand>) {}
+  constructor(
+    @InjectRepository(Brand) private repo: Repository<Brand>,
+    @InjectRepository(Product) private productsRepo: Repository<Product>,
+  ) {}
 
   findAll(includeInactive = false) {
     return this.repo.find({
@@ -37,6 +40,12 @@ export class BrandsService {
   async remove(id: string) {
     const brand = await this.repo.findOne({ where: { id } });
     if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
+    const linked = await this.productsRepo.count({ where: { brandId: id } });
+    if (linked > 0) {
+      throw new BadRequestException(
+        `Không xóa được: còn ${linked} sản phẩm thuộc thương hiệu "${brand.name}".`,
+      );
+    }
     await this.repo.remove(brand);
     return { message: 'Đã xóa thương hiệu' };
   }

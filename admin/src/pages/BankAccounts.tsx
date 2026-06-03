@@ -4,7 +4,8 @@ import PageHeader from '../components/PageHeader';
 import Modal from '../components/Modal';
 import StatCard from '../components/StatCard';
 import Loading from '../components/Loading';
-import { field, unwrapList } from '../utils/format';
+import { useNotify } from '../context/NotifyContext';
+import { apiErrorMessage, field, unwrapList } from '../utils/format';
 
 const BANK_CODES = [
   { code: 'VCB', name: 'Vietcombank' },
@@ -28,6 +29,7 @@ const emptyForm = {
 };
 
 export default function BankAccounts() {
+  const { confirm, toast } = useNotify();
   const [list, setList] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -89,9 +91,20 @@ export default function BankAccounts() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm('Xóa tài khoản này?')) return;
-    await api.delete(`/admin/bank-accounts/${id}`);
-    load();
+    const ok = await confirm({
+      title: 'Xóa tài khoản',
+      message: 'Xóa STK ngân hàng này?',
+      confirmLabel: 'Xóa',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await api.delete(`/admin/bank-accounts/${id}`);
+      toast('Đã xóa tài khoản', 'success');
+      load();
+    } catch (e: unknown) {
+      toast(apiErrorMessage(e, 'Không xóa được'), 'error');
+    }
   };
 
   const previewQr = (row: Record<string, unknown>) => {

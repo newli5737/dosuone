@@ -1,4 +1,12 @@
 /** Đọc số từ ô input (hỗ trợ 1.234,56 hoặc 1234.56) */
+export function apiErrorMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === 'object' && 'response' in err) {
+    const data = (err as { response?: { data?: { message?: string } } }).response?.data;
+    if (data?.message) return String(data.message);
+  }
+  return fallback;
+}
+
 export function parseNumberInput(value: string): number {
   const raw = value.trim().replace(/\s/g, '');
   if (!raw) return NaN;

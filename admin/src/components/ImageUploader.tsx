@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useNotify } from '../context/NotifyContext';
 import type { CloudinaryImage } from '../lib/cloudinary';
 import { deleteFromCloudinary, uploadToCloudinary } from '../lib/cloudinary';
 
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export default function ImageUploader({ label, multiple = false, value, onChange }: Props) {
+  const { confirm } = useNotify();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -77,7 +79,13 @@ export default function ImageUploader({ label, multiple = false, value, onChange
       detachItems(keys);
       return;
     }
-    if (confirm('Không xóa được file trên máy chủ ảnh. Gỡ khỏi danh sách sản phẩm?')) {
+    if (
+      await confirm({
+        title: 'Gỡ ảnh',
+        message: 'Không xóa được file trên máy chủ. Gỡ khỏi danh sách sản phẩm?',
+        confirmLabel: 'Gỡ',
+      })
+    ) {
       detachItems(keys);
     } else {
       setError('Chưa gỡ ảnh. Kiểm tra backend đang chạy và đăng nhập admin.');
@@ -91,10 +99,16 @@ export default function ImageUploader({ label, multiple = false, value, onChange
       detachItems(key);
       return;
     }
-    if (confirm('Không xóa được file trên máy chủ ảnh. Gỡ khỏi danh sách sản phẩm?')) {
+    if (
+      await confirm({
+        title: 'Gỡ ảnh',
+        message: 'Không xóa được file trên máy chủ. Gỡ khỏi danh sách sản phẩm?',
+        confirmLabel: 'Gỡ',
+      })
+    ) {
       detachItems(key);
     } else {
-      setError('Chưa gỡ ảnh. Kiểm tra backend (port 3000) và cấu hình Cloudinary trong .env.');
+      setError('Chưa gỡ ảnh. Kiểm tra backend và cấu hình Cloudinary.');
     }
   };
 

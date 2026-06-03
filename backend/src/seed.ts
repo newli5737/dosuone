@@ -101,10 +101,15 @@ async function seed() {
 
   for (const legacySlug of LEGACY_CATEGORY_SLUGS) {
     const old = await categoriesRepo.findOne({ where: { slug: legacySlug } });
-    if (old && old.isActive) {
+    if (!old) continue;
+    const linked = await productsRepo.count({ where: { categoryId: old.id } });
+    if (linked === 0) {
+      await categoriesRepo.remove(old);
+      console.log(`  − Xóa danh mục cũ (không còn SP): ${legacySlug}`);
+    } else if (old.isActive) {
       old.isActive = false;
       await categoriesRepo.save(old);
-      console.log(`  − Ẩn danh mục cũ: ${legacySlug}`);
+      console.log(`  − Ẩn danh mục cũ: ${legacySlug} (${linked} SP cần chuyển danh mục)`);
     }
   }
 

@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Category } from '../entities';
+import { Category, Product } from '../entities';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 
@@ -9,6 +9,7 @@ import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 export class CategoriesService {
   constructor(
     @InjectRepository(Category) private repo: Repository<Category>,
+    @InjectRepository(Product) private productsRepo: Repository<Product>,
     private cloudinary: CloudinaryService,
   ) {}
 
@@ -58,6 +59,12 @@ export class CategoriesService {
   async remove(id: string) {
     const cat = await this.repo.findOne({ where: { id } });
     if (!cat) throw new NotFoundException('Danh mục không tồn tại');
+    const linked = await this.productsRepo.count({ where: { categoryId: id } });
+    if (linked > 0) {
+      throw new BadRequestException(
+        `Không xóa được: còn ${linked} sản phẩm thuộc danh mục "${cat.name}". Chuyển sang danh mục khác hoặc xóa sản phẩm trước.`,
+      );
+    }
     if (cat.imagePublicId) await this.cloudinary.destroy(cat.imagePublicId);
     await this.repo.remove(cat);
     return { message: 'Đã xóa danh mục' };

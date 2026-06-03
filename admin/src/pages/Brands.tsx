@@ -3,7 +3,8 @@ import api from '../api';
 import PageHeader from '../components/PageHeader';
 import Modal from '../components/Modal';
 import Loading from '../components/Loading';
-import { unwrapList } from '../utils/format';
+import { useNotify } from '../context/NotifyContext';
+import { apiErrorMessage, unwrapList } from '../utils/format';
 import { slugify } from '../utils/slug';
 
 const emptyForm = {
@@ -13,6 +14,7 @@ const emptyForm = {
 };
 
 export default function Brands() {
+  const { confirm, toast } = useNotify();
   const [list, setList] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -89,12 +91,19 @@ export default function Brands() {
   };
 
   const remove = async (id: string, name: string) => {
-    if (!confirm(`Xóa thương hiệu "${name}"?`)) return;
+    const ok = await confirm({
+      title: 'Xóa thương hiệu',
+      message: `Xóa "${name}"? Chỉ xóa được khi không còn sản phẩm của hãng này.`,
+      confirmLabel: 'Xóa',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await api.delete(`/brands/${id}`);
+      toast('Đã xóa thương hiệu', 'success');
       load();
-    } catch {
-      alert('Không xóa được (còn sản phẩm gắn thương hiệu?)');
+    } catch (e: unknown) {
+      toast(apiErrorMessage(e, 'Không xóa được thương hiệu'), 'error');
     }
   };
 

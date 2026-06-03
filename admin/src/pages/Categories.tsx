@@ -4,8 +4,11 @@ import PageHeader from '../components/PageHeader';
 import Modal from '../components/Modal';
 import Loading from '../components/Loading';
 import ImageUploader, { type UploadItem } from '../components/ImageUploader';
-import { field, unwrapList } from '../utils/format';
+import { useNotify } from '../context/NotifyContext';
+import { apiErrorMessage, field, unwrapList } from '../utils/format';
 import { slugify } from '../utils/slug';
+
+const LEGACY_SLUGS = new Set(['apple', 'samsung', 'xiaomi', 'oppo', 'google']);
 
 const emptyForm = {
   name: '',
@@ -14,6 +17,7 @@ const emptyForm = {
 };
 
 export default function Categories() {
+  const { confirm, toast } = useNotify();
   const [list, setList] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -103,13 +107,24 @@ export default function Categories() {
     }
   };
 
-  const remove = async (id: string, name: string) => {
-    if (!confirm(`Xóa danh mục "${name}"? Sản phẩm liên quan có thể lỗi.`)) return;
+  const remove = async (id: string, name: string, slug: string) => {
+    if (LEGACY_SLUGS.has(slug)) {
+      toast('Danh mục cũ (trùng hãng) — đang ẩn, không cần xóa. Dùng danh mục Điện thoại / Tablet.', 'info');
+      return;
+    }
+    const ok = await confirm({
+      title: 'Xóa danh mục',
+      message: `Xóa "${name}"? Chỉ xóa được khi không còn sản phẩm gắn danh mục này.`,
+      confirmLabel: 'Xóa',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await api.delete(`/categories/${id}`);
+      toast('Đã xóa danh mục', 'success');
       load();
-    } catch {
-      alert('Không xóa được (còn sản phẩm gắn danh mục?)');
+    } catch (e: unknown) {
+      toast(apiErrorMessage(e, 'Không xóa được danh mục'), 'error');
     }
   };
 
@@ -179,7 +194,7 @@ export default function Categories() {
                       <button
                         type="button"
                         className="btn btn-danger btn-sm"
-                        onClick={() => remove(id, String(c.name))}
+                        onClick={() => remove(id, String(c.name), String(c.slug))}
                       >
                         Xóa
                       </button>
